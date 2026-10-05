@@ -1,102 +1,466 @@
 #!/usr/bin/env python3
-import argparse,csv,json,math,os,time
+"""Adaptive Ibb commercial-place scanner.
+
+Strategy:
+1) Pull OSM first (Overpass).
+2) Use OSM coordinates + an adaptive exploratory grid as Google Places seeds.
+3) Refine around Google/OSM discoveries with small 40m nearby searches.
+4) Merge/dedupe records while retaining source provenance.
+5) Always write a report, even if one provider is unavailable.
+"""
+
+import argparse
+import csv
+import json
+import math
+import os
+import re
+import time
 from pathlib import Path
-import requests,yaml
 
-UA="Spatial-Synapse-OS/1.0 (+https://github.com/mhommdkuyr/Spatial-Synapse-OS)"
+import requests
+import yaml
 
-def distance(a,b):
-    R=6371000
-    p1,p2=map(math.radians,(a[0],b[0]))
-    dp=math.radians(b[0]-a[0]); dl=math.radians(b[1]-a[1])
-    q=math.sin(dp/2)**2+math.cos(p1)*math.cos(p2)*math.sin(dl/2)**2
-    return 2*R*math.asin(math.sqrt(q))
+UA = "Spatial-Synapse-OS/1.1 (+https://github.com/mhommdkuyr/Spatial-Synapse-OS)"
+GOOGLE_URL = "https://places.googleapis.com/v1/places:searchNearby"
 
-def grid(b,spacing):
-    lat_step=spacing/111320
-    lon_step=spacing/(111320*math.cos(math.radians((b["south"]+b["north"])/2)))
-    y=b["south"]
-    while y<=b["north"]+1e-12:
-        x=b["west"]
-        while x<=b["east"]+1e-12:
-            yield round(y,7),round(x,7)
-            x+=lon_step
-        y+=lat_step
+ARABIC_DIACRITICS = re.compile(r"[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]")
+
+
+def distance(a, b):
+    r = 6371000.0
+    p1, p2 = map(math.radians, (a[0], b[0]))
+    dp = math.radians(b[0] - a[0])
+    dl = math.radians(b[1] - a[1])
+    q = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(q))
+
+
+def normalize_name(value):
+    if not value:
+        return ""
+    value = ARABIC_DIACRITICS.sub("", str(value)).casefold()
+    value = re.sub(r"[^\w\u0600-\u06FF]+", " ", value, flags=re.UNICODE)
+    return re.sub(r"\s+", " ", value).strip()
+
+
+def grid(b, spacing):
+    lat_step = spacing / 111320.0
+    mid_lat = math.radians((b["south"] + b["north"]) / 2)
+    lon_step = spacing / (111320.0 * max(0.2, math.cos(mid_lat)))
+    y = b["south"]
+    while y <= b["north"] + 1e-12:
+        x = b["west"]
+        while x <= b["east"] + 1e-12:
+            yield round(y, 7), round(x, 7)
+            x += lon_step
+        y += lat_step
+
+
+def local_grid(lat, lon, radius_m, spacing_m):
+    b = {
+        "south": lat - radius_m / 111320.0,
+        "north": lat + radius_m / 111320.0,
+        "west": lon - radius_m / (111320.0 * max(0.2, math.cos(math.radians(lat)))),
+        "east": lon + radius_m / (111320.0 * max(0.2, math.cos(math.radians(lat)))),
+    }
+    yield from grid(b, spacing_m)
+
+
+def safe_text(value):
+    return value.strip() if isinstance(value, str) else value
+
 
 def normalize_osm(e):
-    t=e.get("tags",{}); c=e.get("center",{})
-    lat=e.get("lat",c.get("lat")); lon=e.get("lon",c.get("lon"))
-    if lat is None or lon is None:return None
-    return {"source":"osm","source_id":str(e["id"]),"name":t.get("name") or t.get("name:ar") or t.get("brand"),
-      "category":t.get("shop") or t.get("amenity") or t.get("craft") or t.get("office") or t.get("tourism"),
-      "latitude":lat,"longitude":lon,
-      "address":t.get("addr:full") or " ".join(v for v in [t.get("addr:street"),t.get("addr:housenumber"),t.get("addr:district")] if v),
-      "phone":t.get("phone") or t.get("contact:phone"),
-      "website":t.get("website") or t.get("contact:website"),
-      "social":{k:v for k,v in t.items() if k.startswith("contact:") or k in ["facebook","instagram","twitter","whatsapp"]},
-      "opening_hours":t.get("opening_hours"),"products_services":t.get("products") or t.get("product"),"raw_tags":t}
+    tags = e.get("tags", {})
+    center = e.get("center", {})
+    lat = e.get("lat", center.get("lat"))
+    lon = e.get("lon", center.get("lon"))
+    if lat is None or lon is None:
+        return None
 
-def collect_osm(b,urls):
-    q=f"""[out:json][timeout:300];(nwr[shop]({b['south']},{b['west']},{b['north']},{b['east']});nwr[amenity]({b['south']},{b['west']},{b['north']},{b['east']});nwr[craft]({b['south']},{b['west']},{b['north']},{b['east']});nwr[office]({b['south']},{b['west']},{b['north']},{b['east']});nwr[tourism]({b['south']},{b['west']},{b['north']},{b['east']}););out center tags;"""
-    err=None
-    for u in urls:
-        try:
-            r=requests.post(u,data=q,headers={"User-Agent":UA},timeout=360);r.raise_for_status()
-            return [x for e in r.json().get("elements",[]) if (x:=normalize_osm(e))]
-        except Exception as e:err=e
-    raise RuntimeError(f"Overpass failed: {err}")
+    social = {}
+    for k, v in tags.items():
+        if k.startswith("contact:") or k in {"facebook", "instagram", "twitter", "whatsapp"}:
+            social[k] = v
 
-def collect_google(cfg):
-    key=os.getenv("GOOGLE_PLACES_API_KEY")
-    if not key:return [],{"enabled":False,"reason":"missing GOOGLE_PLACES_API_KEY"}
-    url="https://places.googleapis.com/v1/places:searchNearby"
-    headers={"Content-Type":"application/json","X-Goog-Api-Key":key,
-             "X-Goog-FieldMask":"places.id,places.displayName,places.location,places.formattedAddress,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri,places.types,places.regularOpeningHours"}
-    rows=[]; errors=0; requests_count=0
-    for lat,lon in grid(cfg["bbox"],cfg["grid_spacing_m"]):
-        body={"includedTypes":["store"],"maxResultCount":min(20,cfg["google"]["max_result_count"]),
-              "locationRestriction":{"circle":{"center":{"latitude":lat,"longitude":lon},"radius":cfg["google"]["radius_m"]}}}
-        try:
-            r=requests.post(url,headers=headers,json=body,timeout=45);requests_count+=1
-            if r.status_code in (429,500,502,503,504):errors+=1;time.sleep(1);continue
-            r.raise_for_status()
-            for p in r.json().get("places",[]):
-                l=p.get("location",{});d=p.get("displayName",{})
-                rows.append({"source":"google","source_id":p.get("id"),"name":d.get("text"),
-                  "category":(p.get("types") or [None])[0],"latitude":l.get("latitude"),"longitude":l.get("longitude"),
-                  "address":p.get("formattedAddress"),"phone":p.get("internationalPhoneNumber") or p.get("nationalPhoneNumber"),
-                  "website":p.get("websiteUri"),"social":{},"opening_hours":p.get("regularOpeningHours"),
-                  "products_services":None,"raw_tags":p})
-        except Exception:errors+=1
-    return rows,{"enabled":True,"requests":requests_count,"errors":errors}
+    address_parts = [
+        tags.get("addr:street"),
+        tags.get("addr:housenumber"),
+        tags.get("addr:district"),
+        tags.get("addr:city"),
+    ]
 
-def merge(rows):
-    out=[]
-    for r in rows:
-        if r.get("latitude") is None:continue
-        same=None
-        for i,x in enumerate(out):
-            names=(r.get("name") or "").strip().casefold(),(x.get("name") or "").strip().casefold()
-            if names[0] and names[0]==names[1] and distance((r["latitude"],r["longitude"]),(x["latitude"],x["longitude"]))<=75:
-                same=i;break
-        if same is None:
-            r["sources"]=[r["source"]];r["source_ids"]=[r.get("source_id")];out.append(r)
-        else:
-            x=out[same];x["sources"]=sorted(set(x["sources"]+[r["source"]]))
-            x["source_ids"]=sorted(set(x["source_ids"]+[r.get("source_id")]))
-            for k in ["phone","website","address","opening_hours","products_services"]:
-                if not x.get(k) and r.get(k):x[k]=r[k]
+    return {
+        "source": "osm",
+        "source_id": f'{e.get("type", "element")}/{e.get("id")}',
+        "name": tags.get("name") or tags.get("name:ar") or tags.get("brand"),
+        "category": tags.get("shop") or tags.get("amenity") or tags.get("craft") or tags.get("office") or tags.get("tourism"),
+        "latitude": float(lat),
+        "longitude": float(lon),
+        "address": tags.get("addr:full") or ", ".join(x for x in address_parts if x),
+        "phone": tags.get("phone") or tags.get("contact:phone"),
+        "website": tags.get("website") or tags.get("contact:website"),
+        "social": social,
+        "opening_hours": tags.get("opening_hours"),
+        "products_services": tags.get("products") or tags.get("product") or tags.get("service"),
+        "raw_tags": tags,
+    }
+
+
+def overpass_query(b):
+    # Deliberately broad commercial/place tags; exact shop categories vary in OSM.
+    return f"""[out:json][timeout:300];
+(
+  nwr[shop]({b['south']},{b['west']},{b['north']},{b['east']});
+  nwr[amenity]({b['south']},{b['west']},{b['north']},{b['east']});
+  nwr[craft]({b['south']},{b['west']},{b['north']},{b['east']});
+  nwr[office]({b['south']},{b['west']},{b['north']},{b['east']});
+  nwr[tourism]({b['south']},{b['west']},{b['north']},{b['east']});
+);
+out center tags;"""
+
+
+def collect_osm(b, urls):
+    query = overpass_query(b)
+    last_error = None
+    for url in urls:
+        for attempt in range(3):
+            try:
+                response = requests.post(
+                    url,
+                    data=query,
+                    headers={"User-Agent": UA},
+                    timeout=360,
+                )
+                response.raise_for_status()
+                elements = response.json().get("elements", [])
+                rows = [r for e in elements if (r := normalize_osm(e))]
+                return rows, {"enabled": True, "endpoint": url, "elements": len(elements), "attempts": attempt + 1}
+            except Exception as exc:
+                last_error = exc
+                time.sleep(1.5 * (attempt + 1))
+    return [], {"enabled": True, "error": str(last_error) if last_error else "unknown Overpass error"}
+
+
+def google_headers(api_key):
+    return {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": api_key,
+        "X-Goog-FieldMask": ",".join(
+            [
+                "places.id",
+                "places.displayName",
+                "places.location",
+                "places.formattedAddress",
+                "places.nationalPhoneNumber",
+                "places.internationalPhoneNumber",
+                "places.websiteUri",
+                "places.types",
+                "places.regularOpeningHours",
+            ]
+        ),
+    }
+
+
+def normalize_google(place):
+    loc = place.get("location") or {}
+    name = (place.get("displayName") or {}).get("text")
+    return {
+        "source": "google",
+        "source_id": place.get("id"),
+        "name": name,
+        "category": (place.get("types") or [None])[0],
+        "latitude": loc.get("latitude"),
+        "longitude": loc.get("longitude"),
+        "address": place.get("formattedAddress"),
+        "phone": place.get("internationalPhoneNumber") or place.get("nationalPhoneNumber"),
+        "website": place.get("websiteUri"),
+        "social": {},
+        "opening_hours": place.get("regularOpeningHours"),
+        "products_services": None,
+        "raw_tags": place,
+    }
+
+
+def google_search(api_key, lat, lon, radius_m, included_type):
+    body = {
+        "includedTypes": [included_type],
+        "maxResultCount": 20,
+        "locationRestriction": {
+            "circle": {
+                "center": {"latitude": lat, "longitude": lon},
+                "radius": radius_m,
+            }
+        },
+    }
+    response = requests.post(GOOGLE_URL, headers=google_headers(api_key), json=body, timeout=45)
+    if response.status_code in {429, 500, 502, 503, 504}:
+        raise requests.HTTPError(f"transient Google status {response.status_code}", response=response)
+    response.raise_for_status()
+    return response.json().get("places", [])
+
+
+def collect_google(cfg, osm_rows):
+    api_key = os.getenv("GOOGLE_PLACES_API_KEY")
+    if not api_key:
+        return [], {
+            "enabled": False,
+            "available": False,
+            "reason": "GOOGLE_PLACES_API_KEY is not configured as a GitHub Actions secret",
+        }
+
+    gcfg = cfg["google"]
+    exploratory_spacing = int(gcfg.get("exploratory_grid_spacing_m", 250))
+    refine_radius = int(gcfg.get("refine_radius_m", 80))
+    refine_spacing = int(gcfg.get("refine_spacing_m", 40))
+    max_requests = int(gcfg.get("max_requests", 2500))
+    types = gcfg.get(
+        "included_types",
+        [
+            "store",
+            "shopping_mall",
+            "supermarket",
+            "clothing_store",
+            "convenience_store",
+            "electronics_store",
+            "furniture_store",
+            "hardware_store",
+            "home_goods_store",
+            "jewelry_store",
+            "shoe_store",
+            "book_store",
+            "florist",
+            "pharmacy",
+        ],
+    )
+
+    seeds = set(grid(cfg["bbox"], exploratory_spacing))
+    for row in osm_rows:
+        if row.get("latitude") is not None and row.get("longitude") is not None:
+            seeds.add((float(row["latitude"]), float(row["longitude"])))
+
+    rows = []
+    request_count = 0
+    errors = 0
+    transient_errors = 0
+    queries = []
+
+    # Pass 1: exploratory coverage.
+    for seed_lat, seed_lon in sorted(seeds):
+        for place_type in types:
+            if request_count >= max_requests:
+                break
+            try:
+                places = google_search(api_key, seed_lat, seed_lon, int(gcfg.get("exploratory_radius_m", 250)), place_type)
+                request_count += 1
+                rows.extend(normalize_google(p) for p in places)
+            except requests.HTTPError as exc:
+                request_count += 1
+                errors += 1
+                if getattr(exc, "response", None) is not None and exc.response.status_code in {429, 500, 502, 503, 504}:
+                    transient_errors += 1
+                    time.sleep(1.0)
+            except Exception:
+                request_count += 1
+                errors += 1
+
+        if request_count >= max_requests:
+            break
+
+    # Pass 2: 40m refinement around everything discovered so far + OSM.
+    refine_points = {(float(r["latitude"]), float(r["longitude"])) for r in rows if r.get("latitude") and r.get("longitude")}
+    refine_points.update(
+        (float(r["latitude"]), float(r["longitude"]))
+        for r in osm_rows
+        if r.get("latitude") is not None and r.get("longitude") is not None
+    )
+    refine_centers = set()
+    for lat, lon in refine_points:
+        for p in local_grid(lat, lon, refine_radius, refine_spacing):
+            refine_centers.add(p)
+    queries = len(seeds) + len(refine_centers)
+
+    for seed_lat, seed_lon in sorted(refine_centers):
+        if request_count >= max_requests:
+            break
+        # Refinement emphasizes generic store search, then categories.
+        refine_types = gcfg.get("refine_types", ["store", "jewelry_store", "clothing_store", "electronics_store"])
+        for place_type in refine_types:
+            if request_count >= max_requests:
+                break
+            try:
+                places = google_search(api_key, seed_lat, seed_lon, int(gcfg.get("radius_m", 40)), place_type)
+                request_count += 1
+                rows.extend(normalize_google(p) for p in places)
+            except requests.HTTPError as exc:
+                request_count += 1
+                errors += 1
+                if getattr(exc, "response", None) is not None and exc.response.status_code in {429, 500, 502, 503, 504}:
+                    transient_errors += 1
+                    time.sleep(1.0)
+            except Exception:
+                request_count += 1
+                errors += 1
+
+    meta = {
+        "enabled": True,
+        "available": True,
+        "requests": request_count,
+        "errors": errors,
+        "transient_errors": transient_errors,
+        "exploratory_seed_count": len(seeds),
+        "refine_center_count": len(refine_centers),
+        "planned_query_units": queries,
+        "max_requests": max_requests,
+        "refine_radius_m": refine_radius,
+        "refine_spacing_m": refine_spacing,
+        "types": types,
+    }
+    return rows, meta
+
+
+def dedupe_source(rows):
+    seen = set()
+    out = []
+    for row in rows:
+        key = (row.get("source"), row.get("source_id"))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(row)
     return out
 
+
+def merge(rows):
+    out = []
+    for r in dedupe_source(rows):
+        if r.get("latitude") is None or r.get("longitude") is None:
+            continue
+
+        rn = normalize_name(r.get("name"))
+        match_idx = None
+        best_distance = 10**9
+        for i, x in enumerate(out):
+            d = distance(
+                (float(r["latitude"]), float(r["longitude"])),
+                (float(x["latitude"]), float(x["longitude"])),
+            )
+            xn = normalize_name(x.get("name"))
+            if d <= 75 and rn and xn and rn == xn:
+                if d < best_distance:
+                    match_idx, best_distance = i, d
+
+        if match_idx is None:
+            r = dict(r)
+            r["sources"] = [r["source"]]
+            r["source_ids"] = [r.get("source_id")]
+            out.append(r)
+            continue
+
+        x = out[match_idx]
+        x["sources"] = sorted(set(x["sources"] + [r["source"]]))
+        x["source_ids"] = sorted(set(x["source_ids"] + [r.get("source_id")]))
+        for key in ["phone", "website", "address", "opening_hours", "products_services"]:
+            if not x.get(key) and r.get(key):
+                x[key] = r[key]
+        if r.get("social"):
+            x["social"] = {**x.get("social", {}), **r["social"]}
+        if not x.get("category") and r.get("category"):
+            x["category"] = r["category"]
+
+    for row in out:
+        row["source_count"] = len(row.get("sources", []))
+        row["google_present"] = "google" in row.get("sources", [])
+        row["osm_present"] = "osm" in row.get("sources", [])
+    return out
+
+
+def category_counts(rows):
+    counts = {}
+    for row in rows:
+        key = row.get("category") or "unknown"
+        counts[key] = counts.get(key, 0) + 1
+    return dict(sorted(counts.items(), key=lambda x: (-x[1], x[0])))
+
+
+def write_outputs(cfg, rows, report):
+    Path("data").mkdir(parents=True, exist_ok=True)
+
+    Path(cfg["output"]["jsonl"]).write_text(
+        "\n".join(json.dumps(r, ensure_ascii=False, sort_keys=True) for r in rows) + ("\n" if rows else ""),
+        encoding="utf-8",
+    )
+
+    fields = [
+        "name",
+        "category",
+        "latitude",
+        "longitude",
+        "address",
+        "phone",
+        "website",
+        "opening_hours",
+        "products_services",
+        "sources",
+        "source_ids",
+        "source_count",
+        "google_present",
+        "osm_present",
+    ]
+    with open(cfg["output"]["csv"], "w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
+
+    Path(cfg["output"]["report"]).write_text(
+        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+
+
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument("--config",default="config/ibb.yml");a=ap.parse_args()
-    c=yaml.safe_load(Path(a.config).read_text(encoding="utf8"));osm=collect_osm(c["bbox"],c["osm"]["overpass_urls"]) if c["osm"]["enabled"] else []
-    google,gmeta=collect_google(c) if c["google"]["enabled"] else ([],{"enabled":False})
-    rows=merge(osm+google);Path("data").mkdir(exist_ok=True)
-    Path(c["output"]["jsonl"]).write_text("\n".join(json.dumps(x,ensure_ascii=False) for x in rows)+"\n",encoding="utf8")
-    fields=["name","category","latitude","longitude","address","phone","website","opening_hours","products_services","sources","source_ids"]
-    with open(c["output"]["csv"],"w",encoding="utf8-sig",newline="") as f:
-        w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows({k:x.get(k) for k in fields} for x in rows)
-    report={"city":c["city"],"bbox":c["bbox"],"grid_spacing_m":c["grid_spacing_m"],"osm_count":len(osm),"google_count":len(google),"unique_count":len(rows),"google":gmeta,"generated_at":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())}
-    Path(c["output"]["report"]).write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf8");print(json.dumps(report,ensure_ascii=False,indent=2))
-if __name__=="__main__":main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", default="config/ibb.yml")
+    args = parser.parse_args()
+
+    cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
+
+    osm = []
+    osm_meta = {"enabled": False}
+    if cfg.get("osm", {}).get("enabled", True):
+        osm, osm_meta = collect_osm(cfg["bbox"], cfg["osm"]["overpass_urls"])
+
+    google = []
+    google_meta = {"enabled": False}
+    if cfg.get("google", {}).get("enabled", True):
+        google, google_meta = collect_google(cfg, osm)
+
+    rows = merge(osm + google)
+
+    report = {
+        "city": cfg["city"],
+        "bbox": cfg["bbox"],
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "osm_count": len(osm),
+        "google_count_raw": len(google),
+        "unique_count": len(rows),
+        "google_only_count": sum(1 for r in rows if r["google_present"] and not r["osm_present"]),
+        "osm_only_count": sum(1 for r in rows if r["osm_present"] and not r["google_present"]),
+        "matched_multi_source_count": sum(1 for r in rows if r["osm_present"] and r["google_present"]),
+        "category_counts": category_counts(rows),
+        "osm": osm_meta,
+        "google": google_meta,
+        "coverage_notes": [
+            "OSM is open geographic data and can contain businesses missing from Google.",
+            "Google Places is not a legal guarantee of every business in an area; coverage and ranking are provider-dependent.",
+            "A 40m refinement pass is used around discovered places; a blind 40m grid over the full bounding box would create an impractical number of requests.",
+        ],
+    }
+
+    write_outputs(cfg, rows, report)
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()
