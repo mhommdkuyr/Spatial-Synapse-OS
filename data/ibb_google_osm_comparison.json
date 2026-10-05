@@ -2,11 +2,11 @@
   "report": {
     "city": "Ibb, Yemen",
     "generated_at": "2026-10-05T23:36:00.880Z",
-    "google_local_business_count": 21,
-    "google_local_business_with_phone": 15,
+    "google_local_business_count": 33,
+    "google_local_business_with_phone": 27,
     "osm_name_threshold": 0.78,
     "probable_osm_matches": 0,
-    "google_only_by_name": 21,
+    "google_only_by_name": 33,
     "important_note": "These Google records come from the connected local-business search layer, not a direct Places API execution with the exposed repository key. OSM comparison is name-based because the local-business result surface does not expose raw API coordinates here."
   },
   "rows": [
@@ -364,6 +364,210 @@
           "osm_category": "mall",
           "score": 0.53,
           "osm_id": "way/408604005"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJF0IEpAzpHBYRRK3SnStmhcE",
+      "name": "كوافير ام عبير",
+      "category": "Beauty salon",
+      "address": "X59M+R9C, Ibb, Yemen",
+      "phone": "+967 4 421 956",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "بوفيه سنابي",
+          "osm_category": "restaurant",
+          "score": 0.43,
+          "osm_id": "node/4406608189"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJGRE64-jrHBYRpiIYOuYiPmw",
+      "name": "موكا moka",
+      "category": "Bakery/Cafe",
+      "address": "N 1, Ibb, Yemen",
+      "phone": "+967 776 050 481",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "مركز النمر",
+          "osm_category": "attraction",
+          "score": 0.3,
+          "osm_id": "node/5703076727"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJ35IPpC3pHBYRie02LC4wPJQ",
+      "name": "السقاف لقطع غيار السيارات",
+      "category": "Auto parts store",
+      "address": "X56H+P4J, خط الصلبه, Ibb, Yemen",
+      "phone": "+967 777 305 890",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "محلات البعداني لبيع قطع غيار السيارات",
+          "osm_category": "tyres",
+          "score": 0.59,
+          "osm_id": "node/7575310385"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJGcK_VlrpHBYROy-4ZrE9Q0k",
+      "name": "Creativity Car Upholstery",
+      "category": "Upholstery shop",
+      "address": "X52H+VHQ، شارع تعز, Ibb, Yemen",
+      "phone": "+967 773 726 170",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "Mazaya Center",
+          "osm_category": "mall",
+          "score": 0.32,
+          "osm_id": "way/408604005"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJH7cqh_rrHBYRBdm7Y0YWZCk",
+      "name": "مجموعة الوكالة للجوالات ومستلزماتها",
+      "category": "Electronics retail/repair",
+      "address": "X4CV+8XR, Ibb, Yemen",
+      "phone": "+967 771 332 654",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "محلات الصبري للخدمات الزراعيه",
+          "osm_category": "department_store",
+          "score": 0.37,
+          "osm_id": "node/11203083537"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJ5ye5QXzpHBYRjkwaJITSYXc",
+      "name": "ابو عمر قطع غيار السيارات",
+      "category": "Auto parts store",
+      "address": "X55H+2RJ, Ibb, Yemen",
+      "phone": "+967 770 776 445",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "محلات البعداني لبيع قطع غيار السيارات",
+          "osm_category": "tyres",
+          "score": 0.57,
+          "osm_id": "node/7575310385"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJHSfgwLvrHBYR0OLqCTcqM3Y",
+      "name": "الحفيظي لقطع غيار الدراجات النارية والهوائية",
+      "category": "Motorcycle parts store",
+      "address": "X4CW+WQX, R125, Ibb, Yemen",
+      "phone": "+967 771 886 818",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "الفرسان للطباعة وخدمات الكمبيوتر والجوال",
+          "osm_category": "company",
+          "score": 0.39,
+          "osm_id": "way/778059774"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJMV5zSxrpHBYRvUmRC9peQvI",
+      "name": "محلات حمود الشاطر لقطع غيار الدراجات الناريه",
+      "category": "Motorcycle parts store",
+      "address": "X5GM+884، Unnamed Road, Ibb, Yemen",
+      "phone": "+967 770 747 589",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "محلات البعداني لبيع قطع غيار السيارات",
+          "osm_category": "tyres",
+          "score": 0.45,
+          "osm_id": "node/7575310385"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJB9QCU1rpHBYRHKTRewAK1cM",
+      "name": "Yemen Electric",
+      "category": "Electrical supply store",
+      "address": "X53H+2FG، شارع تعز, Ibb, Yemen",
+      "phone": "+967 711 457 171",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "home center",
+          "osm_category": "clothes",
+          "score": 0.33,
+          "osm_id": "node/4109165693"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJp4jraADrHBYRNHon2jTxMXc",
+      "name": "مجمع الفخامه لخدمات السيارات",
+      "category": "Car wash",
+      "address": "X587+2JX, N 1, Ibb, Yemen",
+      "phone": "+967 777 627 733",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "التضامن لخدمات الجوال",
+          "osm_category": "mobile_phone",
+          "score": 0.54,
+          "osm_id": "node/7687150430"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJc4IZhVPpHBYRnEnoZVKQupc",
+      "name": "Yemen Spice",
+      "category": "Home goods store / Supermarket",
+      "address": "مفرق جبله الشارع العام, N 1, Ibb, Yemen",
+      "phone": "+967 4 415 075",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "home center",
+          "osm_category": "clothes",
+          "score": 0.27,
+          "osm_id": "node/4109165693"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJ4Zbs-J_rHBYR6ngTjYt3yQ",
+      "name": "فتحي الشوخي لبيع وشراء جميع انواع الدراجا الناريه وقطع غيارها وصيانتها",
+      "category": "Motorcycle parts/repair",
+      "address": "النزاهه العلياء جامع الصانع خط المجمعه, Ibb, Yemen",
+      "phone": "+967 771 798 657",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "محلات البعداني لبيع قطع غيار السيارات",
+          "osm_category": "tyres",
+          "score": 0.33,
+          "osm_id": "node/7575310385"
         }
       }
     }
