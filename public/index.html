@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ibb Commercial Coverage — Spatial Synapse OS</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    :root{font-family:system-ui,-apple-system,Segoe UI,Tahoma,Arial,sans-serif}
+    body{margin:0;background:#f5f7fa;color:#18212b}
+    header{padding:18px;background:#111827;color:#fff}
+    h1{margin:0 0 6px;font-size:22px}.sub{opacity:.82;font-size:13px}
+    .wrap{padding:14px;max-width:1400px;margin:auto}
+    .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+    .card{background:#fff;border:1px solid #dde3ea;border-radius:12px;padding:12px}
+    .n{font-size:24px;font-weight:700}.l{font-size:12px;color:#667085}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+    input,select{padding:10px;border:1px solid #ccd3db;border-radius:9px;background:#fff}
+    #map{height:55vh;min-height:360px;border-radius:12px;overflow:hidden;border:1px solid #dde3ea;background:#ddd}
+    .table-wrap{margin-top:12px;background:#fff;border:1px solid #dde3ea;border-radius:12px;overflow:auto;max-height:50vh}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:8px;border-bottom:1px solid #edf0f3;text-align:right;vertical-align:top}
+    th{position:sticky;top:0;background:#f8fafc;z-index:1}
+    .muted{color:#667085}
+    @media(max-width:800px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))} #map{height:48vh}}
+  </style>
+</head>
+<body>
+<header>
+  <h1>خريطة الأعمال التجارية في إب — Spatial Synapse OS</h1>
+  <div class="sub">OSM + طبقة المقارنة المحلية المعتمدة على Google. المفتاح لا يُعرض في الواجهة.</div>
+</header>
+<div class="wrap">
+  <div class="cards">
+    <div class="card"><div id="count" class="n">—</div><div class="l">سجلًا موحّدًا</div></div>
+    <div class="card"><div id="shops" class="n">—</div><div class="l">محالًا/متاجر في OSM</div></div>
+    <div class="card"><div id="phones" class="n">—</div><div class="l">سجلًا لهاتف</div></div>
+    <div class="card"><div id="last" class="n">—</div><div class="l">آخر تحديث</div></div>
+  </div>
+  <div class="toolbar">
+    <input id="q" type="search" placeholder="ابحث بالاسم أو العنوان أو الهاتف">
+    <select id="cat"><option value="">كل الفئات</option></select>
+  </div>
+  <div id="map"></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>الاسم</th><th>الفئة</th><th>الهاتف</th><th>العنوان</th><th>المصادر</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let all=[];
+const map=L.map('map').setView([13.97,44.18],12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
+let layer=L.layerGroup().addTo(map);
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const text=s=>Array.isArray(s)?s.join(', '):typeof s==='object'&&s?s.name||JSON.stringify(s):s??'';
+function render(){
+  const q=document.getElementById('q').value.trim().toLowerCase(), cat=document.getElementById('cat').value;
+  layer.clearLayers(); const tbody=document.getElementById('rows'); tbody.innerHTML='';
+  const rows=all.filter(r=>{
+    const hay=[r.name,r.category,r.address,r.phone,r.website].map(text).join(' ').toLowerCase();
+    return (!q||hay.includes(q))&&(!cat||r.category===cat);
+  });
+  rows.forEach(r=>{
+    const lat=Number(r.latitude),lon=Number(r.longitude);
+    if(Number.isFinite(lat)&&Number.isFinite(lon)){
+      const m=L.marker([lat,lon]).addTo(layer);
+      m.bindPopup('<b>'+esc(text(r.name)||'بدون اسم')+'</b><br>'+esc(text(r.category)||'')+'<br>'+esc(text(r.phone)||'')+'<br>'+esc(text(r.address)||''));
+    }
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td>'+esc(text(r.name)||'بدون اسم')+'</td><td>'+esc(text(r.category)||'')+'</td><td>'+esc(text(r.phone)||'')+'</td><td>'+esc(text(r.address)||'')+'</td><td>'+esc(text(r.sources)||'')+'</td>';
+    tbody.appendChild(tr);
+  });
+}
+async function load(){
+  const j=await fetch('../data/ibb_places.jsonl?ts='+Date.now()).then(r=>r.text());
+  all=j.split(/\r?\n/).filter(Boolean).map(line=>JSON.parse(line));
+  document.getElementById('count').textContent=all.length;
+  document.getElementById('shops').textContent=all.filter(r=>r.category && ['clothes','convenience','computer','department_store','electronics','furniture','hardware','jewelry','mobile_phone','supermarket','variety_store','shoe_store','book_store','florist'].includes(r.category)).length;
+  document.getElementById('phones').textContent=all.filter(r=>r.phone).length;
+  const cats=[...new Set(all.map(r=>r.category).filter(Boolean))].sort();
+  const sel=document.getElementById('cat'); cats.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o)});
+  try{
+    const rep=await fetch('../data/coverage_report.json?ts='+Date.now()).then(r=>r.json());
+    document.getElementById('last').textContent=(rep.generated_at||'').replace('T',' ').replace('Z','');
+  }catch(e){}
+  render();
+}
+document.getElementById('q').addEventListener('input',render);
+document.getElementById('cat').addEventListener('change',render);
+load().catch(e=>{document.getElementById('rows').innerHTML='<tr><td colspan="5">تعذر تحميل البيانات: '+esc(e.message)+'</td></tr>'});
+</script>
+</body>
+</html>
