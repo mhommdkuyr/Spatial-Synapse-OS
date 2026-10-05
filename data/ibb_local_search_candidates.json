@@ -1,0 +1,156 @@
+{
+  "generated_at": "2026-10-05T23:31:07.767Z",
+  "note": "Current connected local-business search candidates for Ibb. These are comparison candidates, not a claim that the Google Places API was executed with the repository key.",
+  "candidates": [
+    {
+      "name": "Yemen IBB",
+      "category": "Electrical supply store",
+      "address": "Ibb, Yemen",
+      "phone": "+967 770 498 620",
+      "rating": 4.2,
+      "reviews": 5,
+      "source_ref": "turn934872business0",
+      "osm_name_matches": []
+    },
+    {
+      "name": "شي إن SHEIN",
+      "category": "Clothing store",
+      "address": "X5FM+CM5, Ibb, Yemen",
+      "phone": null,
+      "rating": 4.3,
+      "reviews": 11,
+      "source_ref": "turn934872business2",
+      "osm_name_matches": []
+    },
+    {
+      "name": "أسطورة إب",
+      "category": "Electronics store",
+      "address": "Taiz St, Ibb, Yemen",
+      "phone": null,
+      "rating": 3.8,
+      "reviews": 17,
+      "source_ref": "turn934872business3",
+      "osm_name_matches": []
+    },
+    {
+      "name": "الاسطورة لخدمات الجوال",
+      "category": "Mobile phone repair shop",
+      "address": "Ibb, Yemen",
+      "phone": "+967 777 106 960",
+      "rating": 5,
+      "reviews": 2,
+      "source_ref": "turn934872business4",
+      "osm_name_matches": []
+    },
+    {
+      "name": "جمال المشرقي",
+      "category": "Jewelry store",
+      "address": "X4CW+C35, Ibb, Yemen",
+      "phone": "+967 774 944 492",
+      "rating": 3.8,
+      "reviews": 14,
+      "source_ref": "turn934872business5",
+      "osm_name_matches": []
+    },
+    {
+      "name": "One Mall",
+      "category": "Shopping mall",
+      "address": "Ibb, Yemen",
+      "phone": null,
+      "rating": 3.9,
+      "reviews": 1453,
+      "source_ref": "turn934872business6",
+      "osm_name_matches": []
+    },
+    {
+      "name": "نجم التوفير للتخفيضات",
+      "category": "Women's clothing store",
+      "address": "X5FG+9XC, Ibb, Yemen",
+      "phone": "+967 771 123 233",
+      "rating": 5,
+      "reviews": 2,
+      "source_ref": "turn934872business8",
+      "osm_name_matches": []
+    },
+    {
+      "name": "مركز العُقاب لخدمات الجوال",
+      "category": "Electronics store / E-commerce service",
+      "address": "X49W+8R, Ibb, Yemen",
+      "phone": "+967 4 452 860",
+      "rating": 4.9,
+      "reviews": 10,
+      "source_ref": "turn934872business9",
+      "osm_name_matches": []
+    },
+    {
+      "name": "ببجي موبايل",
+      "category": "Cell phone store",
+      "address": "X593+VHM, Ibb, Yemen",
+      "phone": "+967 717 444 797",
+      "rating": 5,
+      "reviews": 1,
+      "source_ref": "turn934872business10",
+      "osm_name_matches": []
+    },
+    {
+      "name": "مجوهرات العواضي",
+      "category": "Jewelry store",
+      "address": "R125, Ibb, Yemen",
+      "phone": "+967 4 407 935",
+      "rating": null,
+      "reviews": 0,
+      "source_ref": "turn934872business11",
+      "osm_name_matches": []
+    },
+    {
+      "name": "Dhmaran Center",
+      "category": "Shopping mall / Supermarket",
+      "address": "X5C7+R2M, N 1, Ibb, Yemen",
+      "phone": "+967 4 456 747",
+      "rating": null,
+      "reviews": 0,
+      "source_ref": "turn934872business12",
+      "osm_name_matches": []
+    },
+    {
+      "name": "هندام فرع اب",
+      "category": "Men's clothing store",
+      "address": "X549+F72، شارع 22 مايو, Ibb, Yemen",
+      "phone": "+967 779 999 907",
+      "rating": 4.2,
+      "reviews": 9,
+      "source_ref": "turn934872business14",
+      "osm_name_matches": []
+    },
+    {
+      "name": "الخطابي للجوالات والالكترونيات",
+      "category": "Electronics store",
+      "address": "R125, Ibb, Yemen",
+      "phone": "+967 777 025 055",
+      "rating": 3.7,
+      "reviews": 93,
+      "source_ref": "turn934872business15",
+      "osm_name_matches": []
+    },
+    {
+      "name": "اجـيـال الجبري",
+      "category": "Cell phone store",
+      "address": "X49Q+9FH, Ibb, Yemen",
+      "phone": null,
+      "rating": null,
+      "reviews": 0,
+      "source_ref": "turn934872business16",
+      "osm_name_matches": []
+    },
+    {
+      "name": "Jraan Trade Center",
+      "category": "Shopping mall",
+      "address": "X5FG+F7P, Ibb, Yemen",
+      "phone": "+967 777 402 624",
+      "rating": null,
+      "reviews": 0,
+      "source_ref": "turn934872business17",
+      "osm_name_matches": []
+    }
+  ]
+}
