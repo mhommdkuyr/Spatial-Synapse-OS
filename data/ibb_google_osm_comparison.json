@@ -1,0 +1,371 @@
+{
+  "report": {
+    "city": "Ibb, Yemen",
+    "generated_at": "2026-10-05T23:36:00.880Z",
+    "google_local_business_count": 21,
+    "google_local_business_with_phone": 15,
+    "osm_name_threshold": 0.78,
+    "probable_osm_matches": 0,
+    "google_only_by_name": 21,
+    "important_note": "These Google records come from the connected local-business search layer, not a direct Places API execution with the exposed repository key. OSM comparison is name-based because the local-business result surface does not expose raw API coordinates here."
+  },
+  "rows": [
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJ-dlZhG_pHBYRcEY6mX8PXtk",
+      "name": "أسطورة إب",
+      "category": "Electronics store",
+      "address": "Taiz St, Ibb, Yemen",
+      "phone": null,
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "سوق اب",
+          "osm_category": "variety_store",
+          "score": 0.44,
+          "osm_id": "node/10148862617"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJU5e81UjrHBYRIPNNe-56U3c",
+      "name": "الاسطورة لخدمات الجوال",
+      "category": "Mobile phone repair shop",
+      "address": "Ibb, Yemen",
+      "phone": "+967 777 106 960",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "التضامن لخدمات الجوال",
+          "osm_category": "mobile_phone",
+          "score": 0.73,
+          "osm_id": "node/7687150430"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJITuzAn7pHBYRLJS_RutNvEc",
+      "name": "زينون لخدمات الكمبيوتر",
+      "category": "Computer store",
+      "address": "Ibb, Yemen",
+      "phone": "+967 777 796 157",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "جوجل للتقنية والكمبيوتر",
+          "osm_category": "computer",
+          "score": 0.48,
+          "osm_id": "node/10835730311"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJ3w4fcbrpHBYR5ojvzbtif_s",
+      "name": "بقاله البركه",
+      "category": "Grocery store",
+      "address": "W5WG+9R4, Ibb, Yemen",
+      "phone": "+967 772 806 740",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "بقالة الجراش",
+          "osm_category": "supermarket",
+          "score": 0.67,
+          "osm_id": "node/7236136785"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJL24G1YzpHBYRmqwuOy1vti8",
+      "name": "بقالة البركة",
+      "category": "Grocery store",
+      "address": "X59M+CVQ, Ibb, Yemen",
+      "phone": "+967 4 410 002",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "بقالة الجراش",
+          "osm_category": "supermarket",
+          "score": 0.75,
+          "osm_id": "node/7236136785"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJld-tTRnpHBYR4oL5VWlgAnE",
+      "name": "شي إن SHEIN",
+      "category": "Clothing store",
+      "address": "X5FM+CM5, Ibb, Yemen",
+      "phone": null,
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "بوفيه سنابي",
+          "osm_category": "restaurant",
+          "score": 0.27,
+          "osm_id": "node/4406608189"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJN_k621TrHBYRHTKMP0HAh7c",
+      "name": "جمال المشرقي",
+      "category": "Jewelry store",
+      "address": "X4CW+C35, Ibb, Yemen",
+      "phone": "+967 774 944 492",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "مجمع اب التجاري",
+          "osm_category": "mall",
+          "score": 0.47,
+          "osm_id": "node/6588389986"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJP1p_ZH7pHBYRcbpT2nP4cyc",
+      "name": "Ibb Commercial Complex",
+      "category": "Shopping mall",
+      "address": "X5FF+WC8, R125, Ibb, Yemen",
+      "phone": "+967 4 400 347",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "Google.com",
+          "osm_category": "mobile_phone",
+          "score": 0.26,
+          "osm_id": "node/5212953121"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJnyGMAy7pHBYRS62f80Lwd18",
+      "name": "الحبيشي لماركات الاحذيه العالميه",
+      "category": "Shoe store",
+      "address": "شارع العدين, Ibb, Yemen",
+      "phone": "+967 777 711 082",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "مكتب برنامج الغذاء العالمي",
+          "osm_category": "ngo",
+          "score": 0.47,
+          "osm_id": "node/5842420486"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJUeeYXU3rHBYRCUbx-T1Wm-Q",
+      "name": "مركز العُقاب لخدمات الجوال",
+      "category": "Electronics store / E-commerce service",
+      "address": "X49W+8R, Ibb, Yemen",
+      "phone": "+967 4 452 860",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "التضامن لخدمات الجوال",
+          "osm_category": "mobile_phone",
+          "score": 0.62,
+          "osm_id": "node/7687150430"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJN40Twp_rHBYRZkOr2y6JDl4",
+      "name": "ببجي موبايل",
+      "category": "Cell phone store",
+      "address": "X593+VHM, Ibb, Yemen",
+      "phone": "+967 717 444 797",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "يمن موبايل",
+          "osm_category": "mobile_phone",
+          "score": 0.64,
+          "osm_id": "node/4753405121"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJRVV0oXzpHBYRYGNz6Ibaj0A",
+      "name": "مركز الأسطورة لخدمات الكمبيوتر.",
+      "category": "Computer store",
+      "address": "شارع المحافظه, Ibb, Yemen",
+      "phone": "+967 777 377 688",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "الفرسان للطباعة وخدمات الكمبيوتر والجوال",
+          "osm_category": "company",
+          "score": 0.47,
+          "osm_id": "way/778059774"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJM-KQ1ZHpHBYRcNsN8Q6GFD8",
+      "name": "نجم التوفير للتخفيضات",
+      "category": "Women's clothing store",
+      "address": "X5FG+9XC, Ibb, Yemen",
+      "phone": "+967 771 123 233",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "عالم التقنية للكمبيوتر",
+          "osm_category": "computer",
+          "score": 0.45,
+          "osm_id": "node/6536481386"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJ__8LMHnpHBYRktssBuee4Zk",
+      "name": "مجوهرات العواضي",
+      "category": "Jewelry store",
+      "address": "R125, Ibb, Yemen",
+      "phone": "+967 4 407 935",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "مجمع اب التجاري",
+          "osm_category": "mall",
+          "score": 0.53,
+          "osm_id": "node/6588389986"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJP-gwHSnpHBYRZlFF8OkpmtE",
+      "name": "Yemen IBB",
+      "category": "Electrical supply store",
+      "address": "Ibb, Yemen",
+      "phone": "+967 770 498 620",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "home center",
+          "osm_category": "clothes",
+          "score": 0.27,
+          "osm_id": "node/4109165693"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJsdljXcTrHBYRAma4bA0esGI",
+      "name": "اجـيـال الجبري",
+      "category": "Cell phone store",
+      "address": "X49Q+9FH, Ibb, Yemen",
+      "phone": null,
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "مجمع اب التجاري",
+          "osm_category": "mall",
+          "score": 0.53,
+          "osm_id": "node/6588389986"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJnQxMTADrHBYRNBLe_nZknfM",
+      "name": "هندام فرع اب",
+      "category": "Men's clothing store",
+      "address": "X549+F72، شارع 22 مايو, Ibb, Yemen",
+      "phone": "+967 779 999 907",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "فندق قراند اب",
+          "osm_category": "hotel",
+          "score": 0.46,
+          "osm_id": "node/5842407589"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJH-5FGgDrHBYRY1EbXB11QYo",
+      "name": "بقالة ابراهيم الضافري",
+      "category": "Grocery store",
+      "address": "X5C7+R2J, Ibb, Yemen",
+      "phone": null,
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "بقالة الوصابي",
+          "osm_category": "supermarket",
+          "score": 0.43,
+          "osm_id": "node/6720046787"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJJViN_xrrHBYR-AJtf89XEAc",
+      "name": "عالم الصيانة والبرمجة",
+      "category": "Cell phone store",
+      "address": "X4CW+HQ2, Ibb, Yemen",
+      "phone": null,
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "عالم التقنية للكمبيوتر",
+          "osm_category": "computer",
+          "score": 0.45,
+          "osm_id": "node/6536481386"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJvxZNFcLrHBYRtSUD7Tuny5U",
+      "name": "سوبر فتح الرحمن",
+      "category": "Grocery store",
+      "address": "X4FW+XMF, Ibb, Yemen",
+      "phone": null,
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "سوبرماركت ظمران ",
+          "osm_category": "supermarket",
+          "score": 0.4,
+          "osm_id": "node/4109193591"
+        }
+      }
+    },
+    {
+      "provider": "google_local_business_search",
+      "provider_id": "ChIJxfhPoH7pHBYRQ1iNz6eTKe8",
+      "name": "Jraan Trade Center",
+      "category": "Shopping mall",
+      "address": "X5FG+F7P, Ibb, Yemen",
+      "phone": "+967 777 402 624",
+      "comparison": {
+        "osm_match": false,
+        "best_osm_match": {
+          "osm_name": "Mazaya Center",
+          "osm_category": "mall",
+          "score": 0.53,
+          "osm_id": "way/408604005"
+        }
+      }
+    }
+  ]
+}
