@@ -1,20 +1,52 @@
 city: "Ibb, Yemen"
+
+# Broad safety envelope. Google/OSM discovery is later filtered/deduplicated by coordinates.
 bbox:
   south: 13.90
   west: 44.12
   north: 14.04
   east: 44.25
 
+# User-requested 40m resolution is applied during local refinement.
 grid_spacing_m: 40
+
 google:
   enabled: true
+  # First discover populated/commercial areas at a manageable spacing.
+  exploratory_grid_spacing_m: 250
+  exploratory_radius_m: 250
+  # Then scan 40m neighborhoods around discovered OSM/Google places.
+  refine_radius_m: 80
+  refine_spacing_m: 40
   radius_m: 40
-  max_result_count: 20
+  max_requests: 2500
+  included_types:
+    - store
+    - shopping_mall
+    - supermarket
+    - clothing_store
+    - convenience_store
+    - electronics_store
+    - furniture_store
+    - hardware_store
+    - home_goods_store
+    - jewelry_store
+    - shoe_store
+    - book_store
+    - florist
+    - pharmacy
+  refine_types:
+    - store
+    - jewelry_store
+    - clothing_store
+    - electronics_store
+
 osm:
   enabled: true
   overpass_urls:
     - https://overpass-api.de/api/interpreter
     - https://overpass.kumi.systems/api/interpreter
+
 output:
   jsonl: data/ibb_places.jsonl
   csv: data/ibb_places.csv
