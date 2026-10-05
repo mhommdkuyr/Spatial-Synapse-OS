@@ -122,25 +122,56 @@ out center tags;"""
 
 
 def collect_osm(b, urls):
-    query = overpass_query(b)
-    last_error = None
-    for url in urls:
-        for attempt in range(3):
+    # Split the OSM extraction into bounded requests so a slow Overpass
+    # endpoint cannot stall the whole job for many minutes.
+    queries = [
+        f"""[out:json][timeout:120];(
+          nwr[shop]({b['south']},{b['west']},{b['north']},{b['east']});
+        );out center tags;""",
+        f"""[out:json][timeout:120];(
+          nwr[craft]({b['south']},{b['west']},{b['north']},{b['east']});
+          nwr[office]({b['south']},{b['west']},{b['north']},{b['east']});
+        );out center tags;""",
+        f"""[out:json][timeout:120];(
+          nwr[amenity~"^(pharmacy|marketplace|bank|fuel|restaurant|cafe|fast_food)$"]({b['south']},{b['west']},{b['north']},{b['east']});
+          nwr[tourism~"^(hotel|guest_house|hostel|attraction)$"]({b['south']},{b['west']},{b['north']},{b['east']});
+        );out center tags;""",
+    ]
+    all_rows = []
+    endpoint_used = None
+    endpoint_errors = []
+    for query in queries:
+        last_error = None
+        query_done = False
+        for url in urls:
             try:
                 response = requests.post(
                     url,
                     data=query,
                     headers={"User-Agent": UA},
-                    timeout=360,
+                    timeout=150,
                 )
                 response.raise_for_status()
                 elements = response.json().get("elements", [])
                 rows = [r for e in elements if (r := normalize_osm(e))]
-                return rows, {"enabled": True, "endpoint": url, "elements": len(elements), "attempts": attempt + 1}
+                all_rows.extend(rows)
+                endpoint_used = endpoint_used or url
+                query_done = True
+                break
             except Exception as exc:
                 last_error = exc
-                time.sleep(1.5 * (attempt + 1))
-    return [], {"enabled": True, "error": str(last_error) if last_error else "unknown Overpass error"}
+                endpoint_errors.append({"url": url, "error": str(exc)})
+                time.sleep(2)
+        if not query_done and last_error is not None:
+            continue
+    unique = dedupe_source(all_rows)
+    return unique, {
+        "enabled": True,
+        "endpoint": endpoint_used,
+        "elements_normalized": len(unique),
+        "errors": endpoint_errors,
+        "queries": len(queries),
+    }
 
 
 def google_headers(api_key):
