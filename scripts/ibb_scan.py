@@ -57,14 +57,16 @@ def grid(b, spacing):
         y += lat_step
 
 
-def local_grid(lat, lon, radius_m, spacing_m):
-    b = {
-        "south": lat - radius_m / 111320.0,
-        "north": lat + radius_m / 111320.0,
-        "west": lon - radius_m / (111320.0 * max(0.2, math.cos(math.radians(lat)))),
-        "east": lon + radius_m / (111320.0 * max(0.2, math.cos(math.radians(lat)))),
-    }
-    yield from grid(b, spacing_m)
+def refinement_centers(lat, lon, radius_m):
+    # Five 40m-scale centers provide local coverage without exploding request count.
+    yield float(lat), float(lon)
+    dlat = radius_m / 111320.0
+    dlon = radius_m / (111320.0 * max(0.2, math.cos(math.radians(lat))))
+    yield float(lat + dlat), float(lon)
+    yield float(lat - dlat), float(lon)
+    yield float(lat), float(lon + dlon)
+    yield float(lat), float(lon - dlon)
+
 
 
 def safe_text(value):
@@ -300,23 +302,24 @@ def collect_google(cfg, osm_rows):
             break
 
     # Pass 2: 40m refinement around everything discovered so far + OSM.
-    refine_points = {(float(r["latitude"]), float(r["longitude"])) for r in rows if r.get("latitude") and r.get("longitude")}
-    refine_points.update(
+    # Refine around OSM anchors. Google exploratory results are already covered
+    # by the broad pass; refining every Google result can multiply requests dramatically.
+    refine_points = {
         (float(r["latitude"]), float(r["longitude"]))
         for r in osm_rows
         if r.get("latitude") is not None and r.get("longitude") is not None
-    )
+    }
     refine_centers = set()
     for lat, lon in refine_points:
-        for p in local_grid(lat, lon, refine_radius, refine_spacing):
-            refine_centers.add(p)
+        for p in refinement_centers(lat, lon, int(gcfg.get("refine_radius_m", 40))):
+            refine_centers.add((round(p[0], 7), round(p[1], 7)))
     queries = len(seeds) + len(refine_centers)
 
     for seed_lat, seed_lon in sorted(refine_centers):
         if request_count >= max_requests:
             break
         # Refinement emphasizes generic store search, then categories.
-        refine_types = gcfg.get("refine_types", ["store", "jewelry_store", "clothing_store", "electronics_store"])
+        refine_types = gcfg.get("refine_types", ["store"])
         for place_type in refine_types:
             if request_count >= max_requests:
                 break
