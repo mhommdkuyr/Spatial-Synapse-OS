@@ -11,7 +11,8 @@ on:
       - "data/**"
   workflow_dispatch:
   schedule:
-    - cron: "17 1 * * 0"
+    # Continuous hourly refresh without flooding the repository with commits.
+    - cron: "17 * * * *"
 
 permissions:
   contents: write
