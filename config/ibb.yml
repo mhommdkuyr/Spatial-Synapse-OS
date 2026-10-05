@@ -16,7 +16,7 @@ google:
   exploratory_grid_spacing_m: 1000
   exploratory_radius_m: 250
   # Then scan 40m neighborhoods around discovered OSM/Google places.
-  refine_radius_m: 80
+  refine_radius_m: 40
   refine_spacing_m: 40
   radius_m: 40
   max_requests: 1200
@@ -38,9 +38,6 @@ google:
     - pharmacy
   refine_types:
     - store
-    - jewelry_store
-    - clothing_store
-    - electronics_store
 
 osm:
   enabled: true
