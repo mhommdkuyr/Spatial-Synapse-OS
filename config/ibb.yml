@@ -13,7 +13,7 @@ grid_spacing_m: 40
 google:
   enabled: true
   # First discover populated/commercial areas at a manageable spacing.
-  exploratory_grid_spacing_m: 250
+  exploratory_grid_spacing_m: 500
   exploratory_radius_m: 250
   # Then scan 40m neighborhoods around discovered OSM/Google places.
   refine_radius_m: 80
@@ -24,6 +24,7 @@ google:
     - store
     - shopping_mall
     - supermarket
+    - pharmacy
     - clothing_store
     - convenience_store
     - electronics_store
