@@ -51,7 +51,7 @@
     "Google Places is not a legal guarantee of every business in an area; coverage and ranking are provider-dependent.",
     "A 40m refinement pass is used around discovered places; a blind 40m grid over the full bounding box would create an impractical number of requests."
   ],
-  "generated_at": "2026-10-05T23:34:16Z",
+  "generated_at": "2026-10-05T23:37:51Z",
   "google": {
     "available": false,
     "enabled": false,
