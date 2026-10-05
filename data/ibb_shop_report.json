@@ -1,0 +1,33 @@
+{
+  "city": "Ibb, Yemen",
+  "generated_from": "data/ibb_places.jsonl",
+  "scope": "OSM elements carrying a shop=* tag; this is the shop-focused slice of the broad commercial/place scan.",
+  "total_shops": 66,
+  "named_shops": 64,
+  "shops_with_contact": 16,
+  "google_backed": 0,
+  "category_counts": {
+    "supermarket": 10,
+    "clothes": 8,
+    "convenience": 8,
+    "mobile_phone": 4,
+    "computer": 4,
+    "department_store": 4,
+    "mall": 4,
+    "car": 4,
+    "car_repair": 3,
+    "electronics": 3,
+    "furniture": 2,
+    "variety_store": 2,
+    "car_parts": 1,
+    "laundry": 1,
+    "hairdresser": 1,
+    "ticket": 1,
+    "hardware": 1,
+    "tyres": 1,
+    "cosmetics": 1,
+    "butcher": 1,
+    "pastry": 1,
+    "travel_agency": 1
+  }
+}
