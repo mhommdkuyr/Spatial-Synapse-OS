@@ -1,5 +1,9 @@
 name: Ibb Places Coverage Scan
 
+concurrency:
+  group: ibb-places-scan-main
+  cancel-in-progress: true
+
 on:
   push:
     branches: [main]
@@ -13,7 +17,7 @@ permissions:
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 90
     env:
       GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
     steps:
