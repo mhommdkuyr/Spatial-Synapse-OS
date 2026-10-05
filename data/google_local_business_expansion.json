@@ -1,0 +1,160 @@
+{
+  "city": "Ibb, Yemen",
+  "generated_at": "2026-10-06",
+  "source": "connected Google-backed local-business search layer",
+  "limitation": "This file is not a direct Places API dump. It is a live comparison layer used while the repository Places API secret is not available to the execution environment.",
+  "records": [
+    {
+      "provider_id": "ChIJU5e81UjrHBYRIPNNe-56U3c",
+      "name": "الاسطورة لخدمات الجوال",
+      "category": "Mobile phone repair shop",
+      "address": "Ibb, Yemen",
+      "phone": "+967 777 106 960",
+      "opening_hours": "24/7"
+    },
+    {
+      "provider_id": "ChIJ-dlZhG_pHBYRcEY6mX8PXtk",
+      "name": "أسطورة إب",
+      "category": "Electronics store",
+      "address": "Taiz St, Ibb, Yemen",
+      "phone": null,
+      "opening_hours": "09:00-21:30 (varies by day)"
+    },
+    {
+      "provider_id": "ChIJITuzAn7pHBYRLJS_RutNvEc",
+      "name": "زينون لخدمات الكمبيوتر",
+      "category": "Computer store",
+      "address": "Ibb, Yemen",
+      "phone": "+967 777 796 157",
+      "opening_hours": "09:00-22:00 (varies by day)"
+    },
+    {
+      "provider_id": "20313568",
+      "name": "Hilton Ibb Towers Hotel",
+      "category": "Hotel",
+      "address": "شارع الثلاثين, إب اليمن",
+      "phone": "+967 778 666 667",
+      "opening_hours": null
+    },
+    {
+      "provider_id": "ChIJld-tTRnpHBYR4oL5VWlgAnE",
+      "name": "شي إن SHEIN",
+      "category": "Clothing store",
+      "address": "X5FM+CM5, Ibb, Yemen",
+      "phone": null,
+      "opening_hours": null
+    },
+    {
+      "provider_id": "ChIJP1p_ZH7pHBYRcbpT2nP4cyc",
+      "name": "Ibb Commercial Complex",
+      "category": "Shopping mall",
+      "address": "X5FF+WC8, R125, Ibb, Yemen",
+      "phone": "+967 4 400 347",
+      "opening_hours": null
+    },
+    {
+      "provider_id": "ChIJN_k621TrHBYRHTKMP0HAh7c",
+      "name": "جمال المشرقي",
+      "category": "Jewelry store",
+      "address": "X4CW+C35, Ibb, Yemen",
+      "phone": "+967 774 944 492",
+      "opening_hours": "08:38-21:38"
+    },
+    {
+      "provider_id": "ChIJ35IPpC3pHBYRie02LC4wPJQ",
+      "name": "السقاف لقطع غيار السيارات",
+      "category": "Auto parts store",
+      "address": "X56H+P4J, خط الصلبه, Ibb, Yemen",
+      "phone": "+967 777 305 890",
+      "opening_hours": "08:00-21:00"
+    },
+    {
+      "provider_id": "ChIJN40Twp_rHBYRZkOr2y6JDl4",
+      "name": "ببجي موبايل",
+      "category": "Cell phone store",
+      "address": "X593+VHM, Ibb, Yemen",
+      "phone": "+967 717 444 797",
+      "opening_hours": "09:00-22:00 (Friday 12:00-22:00)"
+    },
+    {
+      "provider_id": "ChIJUeeYXU3rHBYRCUbx-T1Wm-Q",
+      "name": "مركز العُقاب لخدمات الجوال",
+      "category": "Electronics store / E-commerce service",
+      "address": "X49W+8R, Ibb, Yemen",
+      "phone": "+967 4 452 860",
+      "opening_hours": "08:00-21:30 (Friday shorter)"
+    },
+    {
+      "provider_id": "ChIJRVV0oXzpHBYRYGNz6Ibaj0A",
+      "name": "مركز الأسطورة لخدمات الكمبيوتر.",
+      "category": "Computer store",
+      "address": "شارع المحافظه, Ibb, Yemen",
+      "phone": "+967 777 377 688",
+      "opening_hours": "09:00-21:00"
+    },
+    {
+      "provider_id": "ChIJl8hRYx_rHBYRoTzpDUxlXZE",
+      "name": "Grand Ibb Hotel",
+      "category": "Hotel",
+      "address": "جوار مركز ضمران، شارع الدائري, Ibb, Yemen",
+      "phone": "+967 777 992 666",
+      "opening_hours": null
+    },
+    {
+      "provider_id": "ChIJM-KQ1ZHpHBYRcNsN8Q6GFD8",
+      "name": "نجم التوفير للتخفيضات",
+      "category": "Women's clothing store",
+      "address": "X5FG+9XC, Ibb, Yemen",
+      "phone": "+967 771 123 233",
+      "opening_hours": null
+    },
+    {
+      "provider_id": "ChIJ__8LMHnpHBYRktssBuee4Zk",
+      "name": "مجوهرات العواضي",
+      "category": "Jewelry store",
+      "address": "R125, Ibb, Yemen",
+      "phone": "+967 4 407 935",
+      "opening_hours": "Sunday 08:00-20:00"
+    },
+    {
+      "provider_id": "ChIJ5ye5QXzpHBYRjkwaJITSYXc",
+      "name": "ابو عمر قطع غيار السيارات",
+      "category": "Auto parts store",
+      "address": "X55H+2RJ, Ibb, Yemen",
+      "phone": "+967 770 776 445",
+      "opening_hours": "09:00-22:00 (Friday later)"
+    },
+    {
+      "provider_id": "ChIJsdljXcTrHBYRAma4bA0esGI",
+      "name": "اجـيـال الجبري",
+      "category": "Cell phone store",
+      "address": "X49Q+9FH, Ibb, Yemen",
+      "phone": null,
+      "opening_hours": "Varies; up to after midnight"
+    },
+    {
+      "provider_id": "ChIJ0SNN0dDrHBYRc08YUakxXxk",
+      "name": "الخطابي للجوالات والالكترونيات",
+      "category": "Electronics store",
+      "address": "R125, Ibb, Yemen",
+      "phone": "+967 777 025 055",
+      "opening_hours": "08:00-22:00 (Friday 08:00-21:30)"
+    },
+    {
+      "provider_id": "ChIJc4IZhVPpHBYRnEnoZVKQupc",
+      "name": "Yemen Spice",
+      "category": "Home goods store / Supermarket",
+      "address": "مفرق جبله الشارع العام, N 1, Ibb, Yemen",
+      "phone": "+967 4 415 075",
+      "opening_hours": "08:00-21:00"
+    },
+    {
+      "provider_id": "ChIJnQxMTADrHBYRNBLe_nZknfM",
+      "name": "هندام فرع اب",
+      "category": "Men's clothing store",
+      "address": "X549+F72، شارع 22 مايو, Ibb, Yemen",
+      "phone": "+967 779 999 907",
+      "opening_hours": "09:00-22:30"
+    }
+  ]
+}
