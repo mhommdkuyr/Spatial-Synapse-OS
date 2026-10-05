@@ -1,7 +1,8 @@
 {
   "city": "Ibb, Yemen",
   "generated_from": "data/ibb_places.jsonl",
-  "scope": "OSM elements carrying a shop=* tag; this is the shop-focused slice of the broad commercial/place scan.",
+  "source_snapshot_generated_at": null,
+  "scope": "Current OSM shop=* slice from the latest broad scan.",
   "total_shops": 66,
   "named_shops": 64,
   "shops_with_contact": 16,
