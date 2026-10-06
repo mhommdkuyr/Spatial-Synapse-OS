@@ -376,6 +376,43 @@ async def run_shard(cfg, shard: int, shards: int, out_dir: Path):
                     await asyncio.sleep(random.uniform(8, 15))
                     continue
 
+                if discover_only:
+                    for url in urls:
+                        lat, lon = parse_coords(url)
+                        meta_row = {
+                            **meta,
+                            "source": "google_maps_browser",
+                            "source_id": parse_place_id(url) or url,
+                            "place_id": parse_place_id(url),
+                            "name": None,
+                            "address": None,
+                            "phone": None,
+                            "website": None,
+                            "category": None,
+                            "opening_hours": None,
+                            "latitude": lat,
+                            "longitude": lon,
+                            "google_maps_url": url,
+                            "scrape_status": "discovered",
+                            "queries_seen": [qkey],
+                        }
+                        key = stable_key(meta_row)
+                        if key in existing:
+                            existing[key]["queries_seen"] = sorted(set((existing[key].get("queries_seen") or []) + [qkey]))
+                        else:
+                            existing[key] = meta_row
+                    with result_path.open("w", encoding="utf-8") as fh:
+                        for row in existing.values():
+                            fh.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
+                    state["stats"]["places"] = len(existing)
+                    print(json.dumps({"shard": shard, "urls_for_query": len(urls), "unique_places": len(existing), "mode": "discover"}, ensure_ascii=False), flush=True)
+                    state["stats"]["queries_ok"] += 1
+                    completed.add(qkey)
+                    state["completed_queries"] = sorted(completed)
+                    state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+                    await asyncio.sleep(random.uniform(float(cfg.get("delay_min", 1.5)), float(cfg.get("delay_max", 3.5))))
+                    continue
+
                 metas = []
                 for url in urls:
                     metas.append({
@@ -425,9 +462,10 @@ def main():
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--shards", type=int, default=8)
     ap.add_argument("--output-dir", default=".scan/google_maps_browser")
+    ap.add_argument("--discover-only", action="store_true")
     args = ap.parse_args()
     cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
-    asyncio.run(run_shard(cfg, args.shard, args.shards, Path(args.output_dir)))
+    asyncio.run(run_shard(cfg, args.shard, args.shards, Path(args.output_dir), discover_only=args.discover_only))
 
 
 if __name__ == "__main__":
