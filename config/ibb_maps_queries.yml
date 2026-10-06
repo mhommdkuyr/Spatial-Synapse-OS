@@ -189,3 +189,7 @@ extra_queries:
   - area: "شعبة قحزة"
     category_group: "general-neighborhood"
     query: "محلات ومتاجر في شعبة قحزة إب اليمن"
+
+max_scroll_rounds: 18
+scroll_delay_min_ms: 700
+scroll_delay_max_ms: 1200
