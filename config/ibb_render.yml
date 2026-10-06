@@ -1,0 +1,77 @@
+city: "Ibb, Yemen"
+
+bbox:
+  south: 13.90
+  west: 44.12
+  north: 14.04
+  east: 44.25
+
+grid_spacing_m: 40
+
+google:
+  enabled: true
+  exploratory_grid_spacing_m: 500
+  exploratory_radius_m: 300
+  refine_radius_m: 40
+  refine_spacing_m: 40
+  radius_m: 40
+  max_requests: 1600
+  required_api_key: true
+  included_types:
+    - asian_grocery_store
+    - auto_parts_store
+    - bicycle_store
+    - book_store
+    - building_materials_store
+    - butcher_shop
+    - cell_phone_store
+    - clothing_store
+    - convenience_store
+    - cosmetics_store
+    - department_store
+    - discount_store
+    - discount_supermarket
+    - electronics_store
+    - farmers_market
+    - flea_market
+    - food_store
+    - furniture_store
+    - garden_center
+    - general_store
+    - gift_shop
+    - grocery_store
+    - hardware_store
+    - health_food_store
+    - home_goods_store
+    - home_improvement_store
+    - hypermarket
+    - jewelry_store
+    - market
+    - pet_store
+    - shoe_store
+    - shopping_mall
+    - sporting_goods_store
+    - sportswear_store
+    - supermarket
+    - tea_store
+    - thrift_store
+    - toy_store
+    - warehouse_store
+    - wholesaler
+    - womens_clothing_store
+    - store
+  refine_types:
+    - store
+
+osm:
+  enabled: true
+  overpass_urls:
+    - https://overpass-api.de/api/interpreter
+    - https://overpass.kumi.systems/api/interpreter
+  tile_rows: 2
+  tile_cols: 2
+
+output:
+  jsonl: public/data/ibb_places.jsonl
+  csv: public/data/ibb_places.csv
+  report: public/data/coverage_report.json
