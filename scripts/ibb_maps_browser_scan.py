@@ -249,7 +249,7 @@ async def extract_detail(page, url: str, query_meta: dict) -> dict | None:
 
 
 async def collect_search_urls(page, query: str, max_results: int):
-    search_url = "https://www.google.com/maps/search/" + quote(query, safe="") + "?hl=en"
+    search_url = "https://www.google.com/maps/search/" + quote(query, safe="") + "?hl=en&gl=ye"
     await page.goto(search_url, wait_until="domcontentloaded", timeout=45000)
     await page.wait_for_timeout(random.uniform(1800, 3000))
     await accept_consent(page)
@@ -265,10 +265,10 @@ async def collect_search_urls(page, query: str, max_results: int):
     except PlaywrightTimeout:
         return [], "no_feed"
 
-    seen = set()
+    found = {}
     stable_rounds = 0
     previous_count = 0
-    for _ in range(35):
+    for _ in range(40):
         links = await page.locator("a[href*='/maps/place/']").all()
         for link in links:
             try:
@@ -278,50 +278,41 @@ async def collect_search_urls(page, query: str, max_results: int):
                 if not href.startswith("http"):
                     href = "https://www.google.com" + href
                 pid = parse_place_id(href) or href.split("?")[0]
-                seen.add(pid)
+                if pid in found:
+                    continue
+                label = await link.get_attribute("aria-label")
+                card_text = None
+                try:
+                    card_text = (await link.inner_text()).strip()
+                except Exception:
+                    pass
+                found[pid] = {
+                    "url": href,
+                    "place_id": parse_place_id(href),
+                    "card_label": label,
+                    "card_text": card_text,
+                }
             except Exception:
                 continue
-        if len(seen) >= max_results:
+
+        current_count = len(found)
+        if current_count >= max_results:
             break
-        if len(seen) == previous_count:
+        if current_count == previous_count:
             stable_rounds += 1
         else:
             stable_rounds = 0
-            previous_count = len(seen)
-        if stable_rounds >= 4:
+            previous_count = current_count
+        if stable_rounds >= 5:
             break
+
         try:
             await feed.evaluate("(el) => { el.scrollTop = el.scrollHeight; }")
         except Exception:
             break
         await page.wait_for_timeout(random.uniform(1000, 1800))
 
-    results = []
-    links = await page.locator("a[href*='/maps/place/']").all()
-    added = set()
-    for link in links:
-        try:
-            href = await link.get_attribute("href")
-            if not href or "/maps/place/" not in href:
-                continue
-            if not href.startswith("http"):
-                href = "https://www.google.com" + href
-            pid = parse_place_id(href) or href.split("?")[0]
-            if pid in added:
-                continue
-            added.add(pid)
-            label = await link.get_attribute("aria-label")
-            card_text = None
-            try:
-                card_text = (await link.inner_text()).strip()
-            except Exception:
-                pass
-            results.append({"url": href, "place_id": parse_place_id(href), "card_label": label, "card_text": card_text})
-            if len(results) >= max_results:
-                break
-        except Exception:
-            continue
-    return results, "ok"
+    return list(found.values())[:max_results], "ok"
 
 
 async def run_shard(cfg, shard: int, shards: int, out_dir: Path):
