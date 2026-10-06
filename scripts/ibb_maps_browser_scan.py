@@ -248,7 +248,7 @@ async def extract_detail(page, url: str, query_meta: dict) -> dict | None:
         }
 
 
-async def collect_search_urls(page, query: str, max_results: int):
+async def collect_search_urls(page, query: str, max_results: int, max_scroll_rounds: int = 18, scroll_delay_min_ms: int = 700, scroll_delay_max_ms: int = 1200):
     search_url = "https://www.google.com/maps/search/" + quote(query, safe="") + "?hl=en&gl=ye"
     await page.goto(search_url, wait_until="domcontentloaded", timeout=45000)
     await page.wait_for_timeout(random.uniform(1800, 3000))
@@ -268,7 +268,7 @@ async def collect_search_urls(page, query: str, max_results: int):
     found = {}
     stable_rounds = 0
     previous_count = 0
-    for _ in range(40):
+    for _ in range(max_scroll_rounds):
         links = await page.locator("a[href*='/maps/place/']").all()
         for link in links:
             try:
@@ -303,14 +303,14 @@ async def collect_search_urls(page, query: str, max_results: int):
         else:
             stable_rounds = 0
             previous_count = current_count
-        if stable_rounds >= 5:
+        if stable_rounds >= 3:
             break
 
         try:
             await feed.evaluate("(el) => { el.scrollTop = el.scrollHeight; }")
         except Exception:
             break
-        await page.wait_for_timeout(random.uniform(1000, 1800))
+        await page.wait_for_timeout(random.uniform(scroll_delay_min_ms, scroll_delay_max_ms))
 
     return list(found.values())[:max_results], "ok"
 
@@ -369,7 +369,14 @@ async def run_shard(cfg, shard: int, shards: int, out_dir: Path, discover_only: 
             attempt_no = int(attempts_state.get(qkey, 0)) + 1
             attempts_state[qkey] = attempt_no
             try:
-                urls, status = await collect_search_urls(search_page, qkey, int(cfg.get("max_results_per_query", 60)))
+                urls, status = await collect_search_urls(
+                    search_page,
+                    qkey,
+                    int(cfg.get("max_results_per_query", 60)),
+                    int(cfg.get("max_scroll_rounds", 18)),
+                    int(cfg.get("scroll_delay_min_ms", 700)),
+                    int(cfg.get("scroll_delay_max_ms", 1200)),
+                )
                 if status == "blocked":
                     state["stats"]["queries_blocked"] += 1
                     completed.add(qkey)
