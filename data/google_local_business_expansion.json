@@ -29,14 +29,6 @@
       "opening_hours": "09:00-22:00 (varies by day)"
     },
     {
-      "provider_id": "20313568",
-      "name": "Hilton Ibb Towers Hotel",
-      "category": "Hotel",
-      "address": "شارع الثلاثين, إب اليمن",
-      "phone": "+967 778 666 667",
-      "opening_hours": null
-    },
-    {
       "provider_id": "ChIJld-tTRnpHBYR4oL5VWlgAnE",
       "name": "شي إن SHEIN",
       "category": "Clothing store",
@@ -93,14 +85,6 @@
       "opening_hours": "09:00-21:00"
     },
     {
-      "provider_id": "ChIJl8hRYx_rHBYRoTzpDUxlXZE",
-      "name": "Grand Ibb Hotel",
-      "category": "Hotel",
-      "address": "جوار مركز ضمران، شارع الدائري, Ibb, Yemen",
-      "phone": "+967 777 992 666",
-      "opening_hours": null
-    },
-    {
       "provider_id": "ChIJM-KQ1ZHpHBYRcNsN8Q6GFD8",
       "name": "نجم التوفير للتخفيضات",
       "category": "Women's clothing store",
@@ -122,7 +106,7 @@
       "category": "Auto parts store",
       "address": "X55H+2RJ, Ibb, Yemen",
       "phone": "+967 770 776 445",
-      "opening_hours": "09:00-22:00 (Friday later)"
+      "opening_hours": "09:00-22:00"
     },
     {
       "provider_id": "ChIJsdljXcTrHBYRAma4bA0esGI",
@@ -155,6 +139,79 @@
       "address": "X549+F72، شارع 22 مايو, Ibb, Yemen",
       "phone": "+967 779 999 907",
       "opening_hours": "09:00-22:30"
+    },
+    {
+      "provider_id": "ChIJP-gwHSnpHBYRZlFF8OkpmtE",
+      "name": "Yemen IBB",
+      "category": "Electrical supply store",
+      "address": "Ibb, Yemen",
+      "phone": "+967 770 498 620",
+      "opening_hours": null
+    },
+    {
+      "provider_id": "ChIJGcK_VlrpHBYROy-4ZrE9Q0k",
+      "name": "Creativity Car Upholstery",
+      "category": "Upholstery shop",
+      "address": "X52H+VHQ، شارع تعز, Ibb, Yemen",
+      "phone": "+967 773 726 170",
+      "opening_hours": "08:00-23:55 (Friday 14:00-23:00)"
+    },
+    {
+      "provider_id": "ChIJM9YQTTvrHBYRfgPqXXvy5bc",
+      "name": "الصلاحي للدراجات النارية وقطع غيارها",
+      "category": "Bicycle wholesaler",
+      "address": "Ibb, Yemen",
+      "phone": "+967 714 441 366",
+      "opening_hours": "07:30-23:00 (Friday 14:00-23:00)"
+    },
+    {
+      "provider_id": "ChIJn8xE5yLpHBYRblbTwJCOhVA",
+      "name": "الجوري_للهدايا_والورد الطبيعي",
+      "category": "Gift shop",
+      "address": "X59J+9VF، شارع تعز, Ibb, Yemen",
+      "phone": "+967 772 540 635",
+      "opening_hours": null
+    },
+    {
+      "provider_id": "ChIJF0IEpAzpHBYRRK3SnStmhcE",
+      "name": "كوافير ام عبير",
+      "category": "Beauty salon",
+      "address": "X59M+R9C, Ibb, Yemen",
+      "phone": "+967 4 421 956",
+      "opening_hours": null
+    },
+    {
+      "provider_id": "ChIJHSfgwLvrHBYR0OLqCTcqM3Y",
+      "name": "الحفيظي لقطع غيار الدراجات النارية والهوائية",
+      "category": "Motorcycle parts store",
+      "address": "X4CW+WQX, R125, Ibb, Yemen",
+      "phone": "+967 771 886 818",
+      "opening_hours": "24/7"
+    },
+    {
+      "provider_id": "ChIJp4jraADrHBYRNHon2jTxMXc",
+      "name": "مجمع الفخامه لخدمات السيارات",
+      "category": "Car wash",
+      "address": "X587+2JX, N 1, Ibb, Yemen",
+      "phone": "+967 777 627 733",
+      "opening_hours": "24/7"
+    },
+    {
+      "provider_id": "ChIJMV5zSxrpHBYRvUmRC9peQvI",
+      "name": "محلات حمود الشاطر لقطع غيار الدراجات الناريه",
+      "category": "Motorcycle parts store",
+      "address": "X5GM+884، Unnamed Road, Ibb, Yemen",
+      "phone": "+967 770 747 589",
+      "opening_hours": "07:00-22:00 (varies by day)"
+    },
+    {
+      "provider_id": "ChIJH7cqh_rrHBYRBdm7Y0YWZCk",
+      "name": "مجموعة الوكالة للجوالات ومستلزماتها",
+      "category": "Electronics retail and repair shop",
+      "address": "X4CV+8XR, Ibb, Yemen",
+      "phone": "+967 771 332 654",
+      "opening_hours": "24/7"
     }
-  ]
+  ],
+  "record_count": 26
 }
