@@ -3,7 +3,13 @@
 from __future__ import annotations
 import argparse, asyncio, csv, json, random, time
 from pathlib import Path
+import sys
 from playwright.async_api import async_playwright
+
+# When launched as "python scripts/enrich_browser_results.py", Python puts
+# scripts/ (not the repository root) on sys.path. Add the root explicitly so
+# the shared scanner helpers can be imported reliably.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts.ibb_maps_browser_scan import extract_detail, parse_place_id, parse_coords, stable_key
 
 async def enrich(cfg, shard, shards, input_path, out_dir):
