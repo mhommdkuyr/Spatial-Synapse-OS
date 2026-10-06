@@ -69,6 +69,20 @@ def refinement_centers(lat, lon, radius_m):
 
 
 
+def split_bbox(b, rows=2, cols=2):
+    rows = max(1, int(rows))
+    cols = max(1, int(cols))
+    lat_step = (b["north"] - b["south"]) / rows
+    lon_step = (b["east"] - b["west"]) / cols
+    for r in range(rows):
+        south = b["south"] + r * lat_step
+        north = b["north"] if r == rows - 1 else b["south"] + (r + 1) * lat_step
+        for col in range(cols):
+            west = b["west"] + col * lon_step
+            east = b["east"] if col == cols - 1 else b["west"] + (col + 1) * lon_step
+            yield {"south": south, "west": west, "north": north, "east": east}
+
+
 def safe_text(value):
     return value.strip() if isinstance(value, str) else value
 
@@ -123,56 +137,63 @@ def overpass_query(b):
 out center tags;"""
 
 
-def collect_osm(b, urls):
-    # Split the OSM extraction into bounded requests so a slow Overpass
-    # endpoint cannot stall the whole job for many minutes.
-    queries = [
-        f"""[out:json][timeout:120];(
-          nwr[shop]({b['south']},{b['west']},{b['north']},{b['east']});
+def collect_osm(b, urls, rows=2, cols=2):
+    # Tile the full envelope so one busy Overpass query cannot time out and
+    # leave large parts of Ibb uncollected.
+    templates = [
+        lambda t: f"""[out:json][timeout:120];(
+          nwr[shop]({t['south']},{t['west']},{t['north']},{t['east']});
         );out center tags;""",
-        f"""[out:json][timeout:120];(
-          nwr[craft]({b['south']},{b['west']},{b['north']},{b['east']});
-          nwr[office]({b['south']},{b['west']},{b['north']},{b['east']});
+        lambda t: f"""[out:json][timeout:120];(
+          nwr[craft]({t['south']},{t['west']},{t['north']},{t['east']});
+          nwr[office]({t['south']},{t['west']},{t['north']},{t['east']});
         );out center tags;""",
-        f"""[out:json][timeout:120];(
-          nwr[amenity~"^(pharmacy|marketplace|bank|fuel|restaurant|cafe|fast_food)$"]({b['south']},{b['west']},{b['north']},{b['east']});
-          nwr[tourism~"^(hotel|guest_house|hostel|attraction)$"]({b['south']},{b['west']},{b['north']},{b['east']});
+        lambda t: f"""[out:json][timeout:120];(
+          nwr[amenity~"^(pharmacy|marketplace|bank|fuel|restaurant|cafe|fast_food)$"]({t['south']},{t['west']},{t['north']},{t['east']});
+          nwr[tourism~"^(hotel|guest_house|hostel|attraction)$"]({t['south']},{t['west']},{t['north']},{t['east']});
         );out center tags;""",
     ]
     all_rows = []
     endpoint_used = None
     endpoint_errors = []
-    for query in queries:
-        last_error = None
-        query_done = False
-        for url in urls:
-            try:
-                response = requests.post(
-                    url,
-                    data=query,
-                    headers={"User-Agent": UA},
-                    timeout=150,
-                )
-                response.raise_for_status()
-                elements = response.json().get("elements", [])
-                rows = [r for e in elements if (r := normalize_osm(e))]
-                all_rows.extend(rows)
-                endpoint_used = endpoint_used or url
-                query_done = True
-                break
-            except Exception as exc:
-                last_error = exc
-                endpoint_errors.append({"url": url, "error": str(exc)})
-                time.sleep(2)
-        if not query_done and last_error is not None:
-            continue
+    request_count = 0
+
+    for tile in split_bbox(b, rows, cols):
+        for make_query in templates:
+            query = make_query(tile)
+            query_done = False
+            last_error = None
+            for url in urls:
+                request_count += 1
+                try:
+                    response = requests.post(
+                        url,
+                        data=query,
+                        headers={"User-Agent": UA},
+                        timeout=150,
+                    )
+                    response.raise_for_status()
+                    elements = response.json().get("elements", [])
+                    all_rows.extend(normalize_osm(e) for e in elements if normalize_osm(e))
+                    endpoint_used = endpoint_used or url
+                    query_done = True
+                    break
+                except Exception as exc:
+                    last_error = exc
+                    endpoint_errors.append({"url": url, "error": str(exc)})
+                    time.sleep(1)
+            if not query_done and last_error is not None:
+                continue
+
     unique = dedupe_source(all_rows)
     return unique, {
         "enabled": True,
         "endpoint": endpoint_used,
         "elements_normalized": len(unique),
         "errors": endpoint_errors,
-        "queries": len(queries),
+        "queries": request_count,
+        "tile_rows": int(rows),
+        "tile_cols": int(cols),
     }
 
 
@@ -191,6 +212,9 @@ def google_headers(api_key):
                 "places.websiteUri",
                 "places.types",
                 "places.regularOpeningHours",
+                "places.businessStatus",
+                "places.primaryType",
+                "places.googleMapsUri",
             ]
         ),
     }
@@ -237,10 +261,12 @@ def google_search(api_key, lat, lon, radius_m, included_types):
 def collect_google(cfg, osm_rows):
     api_key = os.getenv("GOOGLE_PLACES_API_KEY")
     if not api_key:
+        if gcfg_required := bool(cfg.get("google", {}).get("required_api_key", False)):
+            raise RuntimeError("GOOGLE_PLACES_API_KEY is required but not configured")
         return [], {
             "enabled": False,
             "available": False,
-            "reason": "GOOGLE_PLACES_API_KEY is not configured as a GitHub Actions secret",
+            "reason": "GOOGLE_PLACES_API_KEY is not configured",
         }
 
     gcfg = cfg["google"]
@@ -471,7 +497,12 @@ def main():
     osm = []
     osm_meta = {"enabled": False}
     if cfg.get("osm", {}).get("enabled", True):
-        osm, osm_meta = collect_osm(cfg["bbox"], cfg["osm"]["overpass_urls"])
+        osm, osm_meta = collect_osm(
+            cfg["bbox"],
+            cfg["osm"]["overpass_urls"],
+            cfg["osm"].get("tile_rows", 2),
+            cfg["osm"].get("tile_cols", 2),
+        )
 
     google = []
     google_meta = {"enabled": False}
