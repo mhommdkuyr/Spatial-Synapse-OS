@@ -111,14 +111,6 @@ async def extract_detail(page, url: str, query_meta: dict) -> dict | None:
                 "error": "Google Maps presented a traffic/robot verification page",
             }
 
-        def first_text(selector: str):
-            try:
-                loc = page.locator(selector).first
-                if loc.is_visible(timeout=800):
-                    return (await loc.inner_text()).strip()
-            except Exception:
-                return None
-
         name = None
         try:
             h = page.locator("h1").first
