@@ -16,6 +16,7 @@ import math
 import os
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import requests
@@ -252,6 +253,7 @@ def google_search(api_key, lat, lon, radius_m, included_types):
                 "radius": radius_m,
             }
         },
+        "rankPreference": "DISTANCE",
     }
     response = requests.post(GOOGLE_URL, headers=google_headers(api_key), json=body, timeout=45)
     if response.status_code in {429, 500, 502, 503, 504}:
@@ -260,10 +262,31 @@ def google_search(api_key, lat, lon, radius_m, included_types):
     return response.json().get("places", [])
 
 
+def _google_one(api_key, lat, lon, radius_m, included_types):
+    attempts = 0
+    while attempts < 3:
+        attempts += 1
+        try:
+            places = google_search(api_key, lat, lon, radius_m, included_types)
+            return [normalize_google(p) for p in places], None
+        except requests.HTTPError as exc:
+            response = getattr(exc, "response", None)
+            status = response.status_code if response is not None else None
+            if status in {429, 500, 502, 503, 504} and attempts < 3:
+                time.sleep(attempts * 1.5)
+                continue
+            return [], {"error": str(exc), "status": status}
+        except Exception as exc:
+            if attempts < 3:
+                time.sleep(attempts * 1.0)
+                continue
+            return [], {"error": str(exc), "status": None}
+
+
 def collect_google(cfg, osm_rows):
     api_key = os.getenv("GOOGLE_PLACES_API_KEY")
     if not api_key:
-        if gcfg_required := bool(cfg.get("google", {}).get("required_api_key", False)):
+        if bool(cfg.get("google", {}).get("required_api_key", False)):
             raise RuntimeError("GOOGLE_PLACES_API_KEY is required but not configured")
         return [], {
             "enabled": False,
@@ -276,26 +299,7 @@ def collect_google(cfg, osm_rows):
     refine_radius = int(gcfg.get("refine_radius_m", 80))
     refine_spacing = int(gcfg.get("refine_spacing_m", 40))
     max_requests = int(gcfg.get("max_requests", 2500))
-    types = gcfg.get(
-        "included_types",
-        [
-            "store",
-            "shopping_mall",
-            "supermarket",
-            "clothing_store",
-            "convenience_store",
-            "electronics_store",
-            "furniture_store",
-            "hardware_store",
-            "home_goods_store",
-            "jewelry_store",
-            "shoe_store",
-            "book_store",
-            "florist",
-            "pharmacy",
-        ],
-    )
-
+    types = gcfg.get("included_types", ["store"])
     seeds = set(grid(cfg["bbox"], exploratory_spacing))
     for row in osm_rows:
         if row.get("latitude") is not None and row.get("longitude") is not None:
@@ -305,37 +309,22 @@ def collect_google(cfg, osm_rows):
     request_count = 0
     errors = 0
     transient_errors = 0
-    queries = []
 
-    # Pass 1: exploratory coverage.
-    # Nearby Search supports up to 50 included types in one request, so batch
-    # all shopping types instead of multiplying the request count by category.
+    # Build all planned work first, then execute concurrently with bounded
+    # parallelism. This is dramatically faster than serial HTTP calls while
+    # keeping a hard request cap.
+    planned = []
     for seed_lat, seed_lon in sorted(seeds):
-        if request_count >= max_requests:
+        if len(planned) >= max_requests:
             break
-        try:
-            places = google_search(
-                api_key,
-                seed_lat,
-                seed_lon,
-                int(gcfg.get("exploratory_radius_m", 250)),
-                types,
-            )
-            request_count += 1
-            rows.extend(normalize_google(p) for p in places)
-        except requests.HTTPError as exc:
-            request_count += 1
-            errors += 1
-            if getattr(exc, "response", None) is not None and exc.response.status_code in {429, 500, 502, 503, 504}:
-                transient_errors += 1
-                time.sleep(1.0)
-        except Exception:
-            request_count += 1
-            errors += 1
+        planned.append((
+            seed_lat,
+            seed_lon,
+            int(gcfg.get("exploratory_radius_m", 250)),
+            types,
+            "explore",
+        ))
 
-    # Pass 2: 40m refinement around everything discovered so far + OSM.
-    # Refine around OSM anchors. Google exploratory results are already covered
-    # by the broad pass; refining every Google result can multiply requests dramatically.
     refine_points = {
         (float(r["latitude"]), float(r["longitude"]))
         for r in osm_rows
@@ -345,33 +334,56 @@ def collect_google(cfg, osm_rows):
     for lat, lon in refine_points:
         for p in refinement_centers(lat, lon, int(gcfg.get("refine_radius_m", 40))):
             refine_centers.add((round(p[0], 7), round(p[1], 7)))
-    queries = len(seeds) + len(refine_centers)
 
+    refine_types = gcfg.get("refine_types", ["store"])
     for seed_lat, seed_lon in sorted(refine_centers):
-        if request_count >= max_requests:
+        if len(planned) >= max_requests:
             break
-        # Refinement uses the same batched shopping set at 40m around
-        # real OSM commercial anchors.
-        refine_types = gcfg.get("refine_types", types)
-        try:
-            places = google_search(
-                api_key,
-                seed_lat,
-                seed_lon,
-                int(gcfg.get("radius_m", 40)),
-                refine_types,
-            )
+        planned.append((
+            seed_lat,
+            seed_lon,
+            int(gcfg.get("radius_m", 40)),
+            refine_types,
+            "refine",
+        ))
+
+    workers = min(8, max(1, int(gcfg.get("workers", 8))))
+    print(
+        json.dumps({
+            "google_scan_started": True,
+            "api_key_present": bool(api_key),
+            "planned_requests": len(planned),
+            "exploratory_seeds": len(seeds),
+            "refine_centers": len(refine_centers),
+            "workers": workers,
+        }, ensure_ascii=False),
+        flush=True,
+    )
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {
+            pool.submit(_google_one, api_key, lat, lon, radius, included): kind
+            for lat, lon, radius, included, kind in planned
+        }
+        done = 0
+        for future in as_completed(futures):
+            done += 1
+            result_rows, err = future.result()
             request_count += 1
-            rows.extend(normalize_google(p) for p in places)
-        except requests.HTTPError as exc:
-            request_count += 1
-            errors += 1
-            if getattr(exc, "response", None) is not None and exc.response.status_code in {429, 500, 502, 503, 504}:
-                transient_errors += 1
-                time.sleep(1.0)
-        except Exception:
-            request_count += 1
-            errors += 1
+            rows.extend(result_rows)
+            if err:
+                errors += 1
+                if err.get("status") in {429, 500, 502, 503, 504}:
+                    transient_errors += 1
+            if done % 50 == 0 or done == len(planned):
+                print(
+                    json.dumps({
+                        "google_progress_requests": done,
+                        "google_results_raw": len(rows),
+                        "google_errors": errors,
+                    }),
+                    flush=True,
+                )
 
     meta = {
         "enabled": True,
@@ -381,10 +393,11 @@ def collect_google(cfg, osm_rows):
         "transient_errors": transient_errors,
         "exploratory_seed_count": len(seeds),
         "refine_center_count": len(refine_centers),
-        "planned_query_units": queries,
+        "planned_query_units": len(planned),
         "max_requests": max_requests,
         "refine_radius_m": refine_radius,
         "refine_spacing_m": refine_spacing,
+        "workers": workers,
         "types": types,
     }
     return rows, meta
