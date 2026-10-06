@@ -61,6 +61,12 @@ def build_queries(cfg: dict) -> list[dict]:
                 "category_group": category,
                 "query": f"{category} في {area}, إب, اليمن",
             })
+    for item in cfg.get("extra_queries", []):
+        rows.append({
+            "area": item.get("area", ""),
+            "category_group": item.get("category_group", "general"),
+            "query": item["query"],
+        })
     return rows
 
 
@@ -88,8 +94,18 @@ def parse_coords(url: str):
 
 
 def parse_place_id(url: str):
-    m = PLACE_RE.search(url or "")
-    return m.group(1) if m else None
+    url = url or ""
+    # Prefer the stable Maps place token when present in data fragments.
+    for pattern in (r"!1s([^!&]+)", r"[?&]query_place_id=([^&]+)", r"place_id=([^&]+)"):
+        m = re.search(pattern, url)
+        if m:
+            return m.group(1)
+    m = PLACE_RE.search(url)
+    if m:
+        token = m.group(1)
+        if not token.startswith("@") and not token.startswith("data="):
+            return token
+    return None
 
 
 async def extract_detail(page, url: str, query_meta: dict) -> dict | None:
