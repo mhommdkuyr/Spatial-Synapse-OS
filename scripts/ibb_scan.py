@@ -469,6 +469,8 @@ def category_counts(rows):
 
 def write_outputs(cfg, rows, report):
     Path("data").mkdir(parents=True, exist_ok=True)
+    for output_key in ("jsonl", "csv", "report"):
+        Path(cfg["output"][output_key]).parent.mkdir(parents=True, exist_ok=True)
 
     Path(cfg["output"]["jsonl"]).write_text(
         "\n".join(json.dumps(r, ensure_ascii=False, sort_keys=True) for r in rows) + ("\n" if rows else ""),
