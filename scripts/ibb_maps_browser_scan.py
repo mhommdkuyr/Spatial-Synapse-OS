@@ -27,6 +27,7 @@ from playwright.async_api import async_playwright, TimeoutError as PlaywrightTim
 ARABIC_DIACRITICS = re.compile(r"[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]")
 PLACE_RE = re.compile(r"/maps/place/[^/]+/([^/?#]+)")
 COORD_RE = re.compile(r"@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)")
+EMBED_COORD_RE = re.compile(r"!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)")
 
 
 def normalize(value: str | None) -> str:
@@ -87,7 +88,11 @@ async def accept_consent(page):
 
 
 def parse_coords(url: str):
-    m = COORD_RE.search(url or "")
+    url = url or ""
+    m = COORD_RE.search(url)
+    if m:
+        return float(m.group(1)), float(m.group(2))
+    m = EMBED_COORD_RE.search(url)
     if m:
         return float(m.group(1)), float(m.group(2))
     return None, None
