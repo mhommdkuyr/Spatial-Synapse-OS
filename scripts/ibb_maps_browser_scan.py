@@ -330,6 +330,7 @@ async def run_shard(cfg, shard: int, shards: int, out_dir: Path, discover_only: 
             pass
 
     completed = set(state.get("completed_queries", []))
+    attempts_state = state.get("attempts", {}) or {}
     existing = {}
     if result_path.exists():
         for line in result_path.read_text(encoding="utf-8").splitlines():
