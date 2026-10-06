@@ -1,5 +1,9 @@
 name: Ibb Google Maps Browser Coverage
 
+concurrency:
+  group: ibb-google-maps-browser
+  cancel-in-progress: false
+
 on:
   push:
     branches: [main]
