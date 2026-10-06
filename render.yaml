@@ -1,0 +1,11 @@
+services:
+  # Reuse the existing Render static service as the secure Google-key scan worker.
+  # Its GOOGLE_PLACES_API_KEY remains stored only in Render.
+  - type: web
+    name: spatial-synapse-ibb-map
+    runtime: static
+    repo: https://github.com/mhommdkuyr/Spatial-Synapse-OS
+    branch: main
+    buildCommand: pip install -r requirements.txt && python scripts/ibb_scan.py --config config/ibb_render.yml
+    staticPublishPath: public
+    autoDeploy: true
