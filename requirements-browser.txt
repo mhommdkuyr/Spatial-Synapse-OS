@@ -1,0 +1,4 @@
+# Browser extraction follows the Playwright-based architecture of the MIT-licensed
+# eagapov-dev/google-maps-scraper project, audited for this workflow.
+playwright>=1.48,<2
+PyYAML>=6,<7
