@@ -13,13 +13,13 @@ grid_spacing_m: 40
 google:
   enabled: true
   # Broad pass over the full envelope.
-  exploratory_grid_spacing_m: 1000
-  exploratory_radius_m: 250
+  exploratory_grid_spacing_m: 500
+  exploratory_radius_m: 300
   # 40m refinement around OSM commercial anchors.
   refine_radius_m: 40
   refine_spacing_m: 40
   radius_m: 40
-  max_requests: 1200
+  max_requests: 1600
 
   # Google Places (New) shopping types, batched into a single Nearby Search
   # request. The API allows up to 50 types per request.
@@ -75,6 +75,8 @@ osm:
   overpass_urls:
     - https://overpass-api.de/api/interpreter
     - https://overpass.kumi.systems/api/interpreter
+  tile_rows: 2
+  tile_cols: 2
 
 output:
   jsonl: data/ibb_places.jsonl
