@@ -26,8 +26,11 @@ def key(row):
 def main():
     root=Path(".scan/google_maps_browser")
     merged={}
-    for p in sorted(root.glob("shard_*.jsonl")):
-        for line in p.read_text(encoding="utf-8").splitlines():
+
+    def ingest(path):
+        if not path.exists():
+            return
+        for line in path.read_text(encoding="utf-8").splitlines():
             try:
                 row=json.loads(line)
             except Exception:
@@ -39,7 +42,13 @@ def main():
             else:
                 old["queries_seen"]=sorted(set((old.get("queries_seen") or [])+(row.get("queries_seen") or [])))
                 for f in ("name","address","phone","website","category","opening_hours","rating","reviews_count","latitude","longitude","google_maps_url","raw_card_text"):
-                    if not old.get(f) and row.get(f): old[f]=row[f]
+                    if not old.get(f) and row.get(f):
+                        old[f]=row[f]
+
+    # Preserve previous repository results, then add the new shard results.
+    ingest(Path("data/google_maps_browser_results.jsonl"))
+    for p in sorted(root.glob("shard_*.jsonl")):
+        ingest(p)
     rows=list(merged.values())
     Path("data").mkdir(parents=True,exist_ok=True)
     out=Path("data/google_maps_browser_results.jsonl")
@@ -61,7 +70,18 @@ def main():
         "with_phone":sum(bool(r.get("phone")) for r in rows),
         "with_website":sum(bool(r.get("website")) for r in rows),
         "with_coordinates":sum(r.get("latitude") is not None and r.get("longitude") is not None for r in rows),
-        "query_count":sum(1 for _ in root.glob("shard_*.state.json")),
+        "query_count":sum(
+            (
+                json.loads(p.read_text(encoding="utf-8")).get("stats") or {}
+            ).get("queries_ok",0)
+            + (
+                json.loads(p.read_text(encoding="utf-8")).get("stats") or {}
+            ).get("queries_blocked",0)
+            + (
+                json.loads(p.read_text(encoding="utf-8")).get("stats") or {}
+            ).get("queries_no_feed",0)
+            for p in root.glob("shard_*.state.json")
+        ),
         "category_counts":dict(sorted(counts.items(),key=lambda x:(-x[1],x[0]))),
         "note":"Browser discovery is best-effort and subject to Google Maps availability, rate limits, and search-result ranking. CAPTCHA or access controls are not bypassed."
     }
