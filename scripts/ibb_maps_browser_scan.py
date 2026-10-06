@@ -288,7 +288,7 @@ async def collect_search_urls(page, query: str, max_results: int):
             break
         await page.wait_for_timeout(random.uniform(1000, 1800))
 
-    urls = []
+    results = []
     links = await page.locator("a[href*='/maps/place/']").all()
     added = set()
     for link in links:
@@ -299,14 +299,21 @@ async def collect_search_urls(page, query: str, max_results: int):
             if not href.startswith("http"):
                 href = "https://www.google.com" + href
             pid = parse_place_id(href) or href.split("?")[0]
-            if pid not in added:
-                added.add(pid)
-                urls.append(href)
-                if len(urls) >= max_results:
-                    break
+            if pid in added:
+                continue
+            added.add(pid)
+            label = await link.get_attribute("aria-label")
+            card_text = None
+            try:
+                card_text = (await link.inner_text()).strip()
+            except Exception:
+                pass
+            results.append({"url": href, "place_id": parse_place_id(href), "card_label": label, "card_text": card_text})
+            if len(results) >= max_results:
+                break
         except Exception:
             continue
-    return urls, "ok"
+    return results, "ok"
 
 
 async def run_shard(cfg, shard: int, shards: int, out_dir: Path):
@@ -377,13 +384,16 @@ async def run_shard(cfg, shard: int, shards: int, out_dir: Path):
                     continue
 
                 if discover_only:
-                    for url in urls:
+                    for item in urls:
+                        url = item["url"]
                         lat, lon = parse_coords(url)
                         meta_row = {
                             **meta,
                             "source": "google_maps_browser",
-                            "source_id": parse_place_id(url) or url,
-                            "place_id": parse_place_id(url),
+                            "source_id": item.get("place_id") or url,
+                            "place_id": item.get("place_id"),
+                            "name": item.get("card_label") or (item.get("card_text") or "").split("\n")[0] or None,
+                            "raw_card_text": item.get("card_text"),
                             "name": None,
                             "address": None,
                             "phone": None,
@@ -414,10 +424,12 @@ async def run_shard(cfg, shard: int, shards: int, out_dir: Path):
                     continue
 
                 metas = []
-                for url in urls:
+                for item in urls:
                     metas.append({
                         **meta,
-                        "input_url": url,
+                        "input_url": item["url"],
+                        "card_label": item.get("card_label"),
+                        "raw_card_text": item.get("card_text"),
                         "queried_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                     })
                 for start in range(0, len(metas), 30):
