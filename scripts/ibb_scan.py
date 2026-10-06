@@ -216,9 +216,9 @@ def normalize_google(place):
     }
 
 
-def google_search(api_key, lat, lon, radius_m, included_type):
+def google_search(api_key, lat, lon, radius_m, included_types):
     body = {
-        "includedTypes": [included_type],
+        "includedTypes": included_types,
         "maxResultCount": 20,
         "locationRestriction": {
             "circle": {
@@ -280,26 +280,30 @@ def collect_google(cfg, osm_rows):
     queries = []
 
     # Pass 1: exploratory coverage.
+    # Nearby Search supports up to 50 included types in one request, so batch
+    # all shopping types instead of multiplying the request count by category.
     for seed_lat, seed_lon in sorted(seeds):
-        for place_type in types:
-            if request_count >= max_requests:
-                break
-            try:
-                places = google_search(api_key, seed_lat, seed_lon, int(gcfg.get("exploratory_radius_m", 250)), place_type)
-                request_count += 1
-                rows.extend(normalize_google(p) for p in places)
-            except requests.HTTPError as exc:
-                request_count += 1
-                errors += 1
-                if getattr(exc, "response", None) is not None and exc.response.status_code in {429, 500, 502, 503, 504}:
-                    transient_errors += 1
-                    time.sleep(1.0)
-            except Exception:
-                request_count += 1
-                errors += 1
-
         if request_count >= max_requests:
             break
+        try:
+            places = google_search(
+                api_key,
+                seed_lat,
+                seed_lon,
+                int(gcfg.get("exploratory_radius_m", 250)),
+                types,
+            )
+            request_count += 1
+            rows.extend(normalize_google(p) for p in places)
+        except requests.HTTPError as exc:
+            request_count += 1
+            errors += 1
+            if getattr(exc, "response", None) is not None and exc.response.status_code in {429, 500, 502, 503, 504}:
+                transient_errors += 1
+                time.sleep(1.0)
+        except Exception:
+            request_count += 1
+            errors += 1
 
     # Pass 2: 40m refinement around everything discovered so far + OSM.
     # Refine around OSM anchors. Google exploratory results are already covered
@@ -318,24 +322,28 @@ def collect_google(cfg, osm_rows):
     for seed_lat, seed_lon in sorted(refine_centers):
         if request_count >= max_requests:
             break
-        # Refinement emphasizes generic store search, then categories.
-        refine_types = gcfg.get("refine_types", ["store"])
-        for place_type in refine_types:
-            if request_count >= max_requests:
-                break
-            try:
-                places = google_search(api_key, seed_lat, seed_lon, int(gcfg.get("radius_m", 40)), place_type)
-                request_count += 1
-                rows.extend(normalize_google(p) for p in places)
-            except requests.HTTPError as exc:
-                request_count += 1
-                errors += 1
-                if getattr(exc, "response", None) is not None and exc.response.status_code in {429, 500, 502, 503, 504}:
-                    transient_errors += 1
-                    time.sleep(1.0)
-            except Exception:
-                request_count += 1
-                errors += 1
+        # Refinement uses the same batched shopping set at 40m around
+        # real OSM commercial anchors.
+        refine_types = gcfg.get("refine_types", types)
+        try:
+            places = google_search(
+                api_key,
+                seed_lat,
+                seed_lon,
+                int(gcfg.get("radius_m", 40)),
+                refine_types,
+            )
+            request_count += 1
+            rows.extend(normalize_google(p) for p in places)
+        except requests.HTTPError as exc:
+            request_count += 1
+            errors += 1
+            if getattr(exc, "response", None) is not None and exc.response.status_code in {429, 500, 502, 503, 504}:
+                transient_errors += 1
+                time.sleep(1.0)
+        except Exception:
+            request_count += 1
+            errors += 1
 
     meta = {
         "enabled": True,
