@@ -331,7 +331,7 @@ async def run_shard(cfg, shard: int, shards: int, out_dir: Path):
     state_path = out_dir / f"shard_{shard}.state.json"
     result_path = out_dir / f"shard_{shard}.jsonl"
 
-    state = {"completed_queries": [], "stats": {"queries_ok": 0, "queries_blocked": 0, "queries_no_feed": 0, "places": 0}}
+    state = {"completed_queries": [], "attempts": {}, "stats": {"queries_ok": 0, "queries_blocked": 0, "queries_no_feed": 0, "places": 0}}
     if state_path.exists():
         try:
             state.update(json.loads(state_path.read_text(encoding="utf-8")))
@@ -374,21 +374,28 @@ async def run_shard(cfg, shard: int, shards: int, out_dir: Path):
             if qkey in completed:
                 continue
             print(json.dumps({"shard": shard, "query_index": index, "query": qkey}, ensure_ascii=False), flush=True)
+            attempt_no = int(attempts_state.get(qkey, 0)) + 1
+            attempts_state[qkey] = attempt_no
             try:
                 urls, status = await collect_search_urls(search_page, qkey, int(cfg.get("max_results_per_query", 60)))
                 if status == "blocked":
                     state["stats"]["queries_blocked"] += 1
                     completed.add(qkey)
                     state["completed_queries"] = sorted(completed)
+                    state["attempts"] = attempts_state
                     state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
-                    await asyncio.sleep(random.uniform(20, 35))
+                    await asyncio.sleep(random.uniform(25, 45))
                     continue
                 if status != "ok":
                     state["stats"]["queries_no_feed"] += 1
-                    completed.add(qkey)
+                    # A missing feed can be transient; retry a few times before
+                    # considering the query exhausted.
+                    if attempt_no >= 3:
+                        completed.add(qkey)
                     state["completed_queries"] = sorted(completed)
+                    state["attempts"] = attempts_state
                     state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
-                    await asyncio.sleep(random.uniform(8, 15))
+                    await asyncio.sleep(random.uniform(10, 20))
                     continue
 
                 if discover_only:
@@ -465,12 +472,14 @@ async def run_shard(cfg, shard: int, shards: int, out_dir: Path):
 
                 state["stats"]["queries_ok"] += 1
             except Exception as exc:
-                print(json.dumps({"shard": shard, "query_error": str(exc)[:500], "query": qkey}, ensure_ascii=False), flush=True)
+                print(json.dumps({"shard": shard, "query_error": str(exc)[:500], "attempt": attempt_no, "query": qkey}, ensure_ascii=False), flush=True)
+                if attempt_no >= 3:
+                    completed.add(qkey)
             finally:
-                completed.add(qkey)
                 state["completed_queries"] = sorted(completed)
+                state["attempts"] = attempts_state
                 state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
-                await asyncio.sleep(random.uniform(float(cfg.get("delay_min", 1.5)), float(cfg.get("delay_max", 3.5))))
+                await asyncio.sleep(random.uniform(float(cfg.get("delay_min", 3.5)), float(cfg.get("delay_max", 7.0))))
 
         await browser.close()
     print(json.dumps({"shard_done": shard, "unique_places": len(existing), "stats": state["stats"]}, ensure_ascii=False), flush=True)
