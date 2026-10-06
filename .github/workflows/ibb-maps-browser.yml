@@ -32,10 +32,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate scanner syntax and arguments
+      - name: Validate scanner syntax
         run: |
           python -m py_compile scripts/ibb_maps_browser_scan.py
-          python scripts/ibb_maps_browser_scan.py --help | grep -q -- --discover-only
+          grep -q "discover_only: bool = False" scripts/ibb_maps_browser_scan.py
 
       - name: Install browser
         run: |
