@@ -315,7 +315,7 @@ async def collect_search_urls(page, query: str, max_results: int):
     return list(found.values())[:max_results], "ok"
 
 
-async def run_shard(cfg, shard: int, shards: int, out_dir: Path):
+async def run_shard(cfg, shard: int, shards: int, out_dir: Path, discover_only: bool = False):
     queries = build_queries(cfg)
     shard_queries = [q for i, q in enumerate(queries) if i % shards == shard]
     out_dir.mkdir(parents=True, exist_ok=True)
