@@ -52,8 +52,17 @@ def load_jsonl(path):
         except Exception:pass
     return out
 
+def in_ibb_bbox(r):
+    lat=parse_num(r.get("latitude"))
+    lon=parse_num(r.get("longitude"))
+    if lat is None or lon is None:
+        return False
+    return 13.90 <= lat <= 14.04 and 44.12 <= lon <= 44.25
+
 def main():
-    g=load_csvs(Path(".scan/gosom"))
+    g_all=load_csvs(Path(".scan/gosom"))
+    g=[r for r in g_all if in_ibb_bbox(r)]
+    filtered_out_of_scope=len(g_all)-len(g)
     merged={}
     for r in g:
         k=google_key(r)
@@ -147,6 +156,8 @@ def main():
       "source":"gosom/google-maps-scraper",
       "generated_at":__import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
       "raw_google_rows":len(g),
+      "raw_google_rows_before_bbox":len(g_all),
+      "filtered_out_of_scope_rows":filtered_out_of_scope,
       "unique_google_rows":len(final),
       "matched_with_osm_by_name_and_75m":matched,
       "with_place_id":sum(bool(r.get("place_id")) for r in final),
@@ -155,7 +166,7 @@ def main():
       "with_opening_hours":sum(bool(r.get("opening_hours")) for r in final),
       "with_coordinates":sum(r.get("latitude") is not None and r.get("longitude") is not None for r in final),
       "categories":dict(Counter(r.get("category") or "unknown" for r in final).most_common()),
-      "coverage_note":"Dense area/category queries plus an independent grid pass. This is a best-effort Google Maps dataset; provider ranking/access controls mean absolute completeness cannot be mathematically guaranteed."
+      "coverage_note":"Dense area/category queries plus an independent grid pass. Results are filtered to the configured Ibb bounding box to exclude nearby districts returned by broad Google queries. This remains best-effort; provider ranking/access controls mean absolute completeness cannot be mathematically guaranteed."
     }
     Path("data/ibb_google_gosom_report.json").write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True),encoding="utf-8")
     print(json.dumps(report,ensure_ascii=False,indent=2))
