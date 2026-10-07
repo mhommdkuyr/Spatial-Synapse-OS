@@ -1,104 +1,10 @@
-name: Ibb Google Maps Detail Enrichment
+name: Ibb Google Maps Detail Enrichment (legacy)
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "data/google_maps_browser_results.jsonl"
-      - "scripts/enrich_browser_results.py"
-      - "scripts/merge_enriched_browser_results.py"
-      - "config/ibb_maps_queries.yml"
-      - ".github/workflows/ibb-maps-browser-enrich.yml"
   workflow_dispatch:
 
-permissions:
-  contents: write
-
-concurrency:
-  group: ibb-google-maps-enrichment
-  cancel-in-progress: false
-
 jobs:
-  enrich:
-    name: Enrich shard ${{ matrix.shard }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 330
-    strategy:
-      fail-fast: false
-      max-parallel: 4
-      matrix:
-        shard: [0,1,2,3,4,5,6,7]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install browser
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements-browser.txt
-          python -m playwright install --with-deps chromium
-
-      - name: Enrich unique Google Maps URLs
-        run: |
-          mkdir -p .scan/google_maps_enriched
-          python scripts/enrich_browser_results.py             --config config/ibb_maps_queries.yml             --input data/google_maps_browser_results.jsonl             --shard ${{ matrix.shard }}             --shards 8             --output-dir .scan/google_maps_enriched
-
-      - name: Upload enriched shard
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: google-maps-enriched-${{ matrix.shard }}
-          path: |
-            .scan/google_maps_enriched/shard_${{ matrix.shard }}.jsonl
-            .scan/google_maps_enriched/shard_${{ matrix.shard }}.state.json
-          if-no-files-found: warn
-          retention-days: 7
-
-  merge:
-    name: Merge enriched records
-    needs: enrich
-    if: always()
+  legacy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Download enriched shards
-        uses: actions/download-artifact@v4
-        with:
-          pattern: google-maps-enriched-*
-          path: .scan/google_maps_enriched
-          merge-multiple: true
-
-      - name: Merge and audit
-        run: python scripts/merge_enriched_browser_results.py
-
-      - name: Validate
-        run: |
-          set -e
-          test -s data/google_maps_browser_enriched.jsonl
-          test -s data/google_maps_browser_enriched.csv
-          test -s data/google_maps_browser_enriched_report.json
-          python - <<'PY'
-          import json
-          p=json.load(open("data/google_maps_browser_enriched_report.json",encoding="utf-8"))
-          assert p["unique_places"] > 0, p
-          assert p["with_name"] > 0, p
-          print(json.dumps(p,ensure_ascii=False,indent=2))
-          PY
-
-      - name: Commit enriched data
-        run: |
-          set -e
-          git config user.name "Spatial Synapse Bot"
-          git config user.email "actions@users.noreply.github.com"
-          git add data/google_maps_browser_enriched.jsonl data/google_maps_browser_enriched.csv data/google_maps_browser_enriched_report.json
-          git diff --cached --quiet && exit 0
-          git commit -m "data: enrich Google Maps browser records"
-          for attempt in 1 2 3; do
-            git fetch origin main
-            if git rebase origin/main && git push origin HEAD:main; then
-              exit 0
-            fi
-            git rebase --abort || true
-            sleep 5
-          done
-          exit 1
+      - run: echo "Legacy browser enrichment disabled; active enrichment follows gosom results."
