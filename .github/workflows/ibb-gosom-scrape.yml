@@ -1,9 +1,5 @@
 name: Ibb Full Google Maps Scan — gosom
 
-concurrency:
-  group: ibb-full-gosom-active
-  cancel-in-progress: true
-
 on:
   push:
     branches: [main]
