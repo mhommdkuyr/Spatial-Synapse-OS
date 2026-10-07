@@ -39,17 +39,20 @@ jobs:
           mkdir -p .scan/gosom
           for attempt in 1 2 3; do
             echo "Attempt $attempt"
-            if docker run --rm \
+            docker run --rm \
               -v "${GITHUB_WORKSPACE}/.scan/queries-${{ matrix.shard }}.txt:/queries.txt:ro" \
               -v "${GITHUB_WORKSPACE}/.scan/gosom:/out" \
               gosom/google-maps-scraper:latest \
               -input /queries.txt \
               -results /out/shard-${{ matrix.shard }}.csv \
-              -depth 5 -email -resume -c 4 -pages-per-browser 2 -browser-pool-size 2 -exit-on-inactivity 15m; then
-              sudo chown -R "$(id -u):$(id -g)" .scan/gosom || true
-              test -s "$out"; exit 0
-            fi
+              -depth 5 -email -resume -c 4 -pages-per-browser 2 -browser-pool-size 2 -exit-on-inactivity 15m
+            rc=$?
             sudo chown -R "$(id -u):$(id -g)" .scan/gosom || true
+            if [ -s "$out" ]; then
+              echo "gosom produced a non-empty result file (exit=$rc); accepting shard."
+              exit 0
+            fi
+            echo "gosom produced no result file (exit=$rc). Retrying."
             sleep 20
           done
           exit 1
@@ -113,18 +116,21 @@ jobs:
           out="/out/shard-${{ matrix.shard }}.csv"
           mkdir -p .scan/gosom-grid
           for attempt in 1 2 3; do
-            if docker run --rm \
+            docker run --rm \
               -v "${GITHUB_WORKSPACE}/.scan/grid-${{ matrix.shard }}.txt:/queries.txt:ro" \
               -v "${GITHUB_WORKSPACE}/.scan/gosom-grid:/out" \
               gosom/google-maps-scraper:latest \
               -input /queries.txt \
               -results /out/shard-${{ matrix.shard }}.csv \
               -depth 5 -email -resume -c 4 -pages-per-browser 2 -browser-pool-size 2 \
-              -grid-bbox "13.90,44.12,14.04,44.25" -grid-cell 1.0 -exit-on-inactivity 15m; then
-              sudo chown -R "$(id -u):$(id -g)" .scan/gosom-grid || true
-              test -s "$out"; exit 0
-            fi
+              -grid-bbox "13.90,44.12,14.04,44.25" -grid-cell 1.0 -exit-on-inactivity 15m
+            rc=$?
             sudo chown -R "$(id -u):$(id -g)" .scan/gosom-grid || true
+            if [ -s "$out" ]; then
+              echo "gosom grid produced a non-empty result file (exit=$rc); accepting shard."
+              exit 0
+            fi
+            echo "gosom grid produced no result file (exit=$rc). Retrying."
             sleep 20
           done
           exit 1
