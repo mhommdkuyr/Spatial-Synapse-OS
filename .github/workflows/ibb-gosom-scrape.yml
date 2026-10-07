@@ -39,8 +39,8 @@ jobs:
       - name: Scrape with gosom
         run: |
           set -e
-          out="/work/.scan/gosom/shard-${{ matrix.shard }}.csv"
-          mkdir -p /work/.scan/gosom
+          out="/out/shard-${{ matrix.shard }}.csv"
+          mkdir -p .scan/gosom
           for attempt in 1 2 3; do
             echo "Attempt $attempt"
             if docker run --rm -v "${GITHUB_WORKSPACE}:/work" gosom/google-maps-scraper:latest               -input "/work/.scan/queries-${{ matrix.shard }}.txt"               -results "$out" -depth 3 -email -resume -c 4 -pages-per-browser 2 -browser-pool-size 2 -exit-on-inactivity 15m; then
@@ -95,8 +95,8 @@ jobs:
       - name: Grid scrape with gosom
         run: |
           set -e
-          out="/work/.scan/gosom-grid/shard-${{ matrix.shard }}.csv"
-          mkdir -p /work/.scan/gosom-grid
+          out="/out/shard-${{ matrix.shard }}.csv"
+          mkdir -p .scan/gosom-grid
           for attempt in 1 2 3; do
             if docker run --rm -v "${GITHUB_WORKSPACE}:/work" gosom/google-maps-scraper:latest               -input "/work/.scan/grid-${{ matrix.shard }}.txt"               -results "$out" -depth 2 -email -resume -c 4 -pages-per-browser 2 -browser-pool-size 2               -grid-bbox "13.90,44.12,14.04,44.25" -grid-cell 1.5 -exit-on-inactivity 15m; then
               test -s "$out"; exit 0
