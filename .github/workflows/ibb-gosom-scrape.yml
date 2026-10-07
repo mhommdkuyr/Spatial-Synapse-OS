@@ -39,6 +39,7 @@ jobs:
           mkdir -p .scan/gosom
           for attempt in 1 2 3; do
             echo "Attempt $attempt"
+            set +e
             docker run --rm \
               -v "${GITHUB_WORKSPACE}/.scan/queries-${{ matrix.shard }}.txt:/queries.txt:ro" \
               -v "${GITHUB_WORKSPACE}/.scan/gosom:/out" \
@@ -47,6 +48,7 @@ jobs:
               -results /out/shard-${{ matrix.shard }}.csv \
               -depth 5 -email -resume -c 4 -pages-per-browser 2 -browser-pool-size 2 -exit-on-inactivity 15m
             rc=$?
+            set -e
             sudo chown -R "$(id -u):$(id -g)" .scan/gosom || true
             if [ -s "$out" ]; then
               echo "gosom produced a non-empty result file (exit=$rc); accepting shard."
@@ -116,6 +118,7 @@ jobs:
           out="/out/shard-${{ matrix.shard }}.csv"
           mkdir -p .scan/gosom-grid
           for attempt in 1 2 3; do
+            set +e
             docker run --rm \
               -v "${GITHUB_WORKSPACE}/.scan/grid-${{ matrix.shard }}.txt:/queries.txt:ro" \
               -v "${GITHUB_WORKSPACE}/.scan/gosom-grid:/out" \
@@ -125,6 +128,7 @@ jobs:
               -depth 5 -email -resume -c 4 -pages-per-browser 2 -browser-pool-size 2 \
               -grid-bbox "13.90,44.12,14.04,44.25" -grid-cell 1.0 -exit-on-inactivity 15m
             rc=$?
+            set -e
             sudo chown -R "$(id -u):$(id -g)" .scan/gosom-grid || true
             if [ -s "$out" ]; then
               echo "gosom grid produced a non-empty result file (exit=$rc); accepting shard."
