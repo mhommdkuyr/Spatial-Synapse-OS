@@ -1,0 +1,165 @@
+name: Ibb Full Google Maps Scan — gosom
+
+concurrency:
+  group: ibb-full-gosom
+  cancel-in-progress: false
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "config/gosom_ibb_queries.txt"
+      - "scripts/merge_gosom_ibb_results.py"
+      - ".github/workflows/ibb-gosom-scrape.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "13 2 * * 1"
+
+permissions:
+  contents: write
+
+jobs:
+  category-scrape:
+    name: Google Maps categories shard ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare query shard
+        run: |
+          set -e
+          mkdir -p .scan/gosom
+          awk -v s="${{ matrix.shard }}" -v n=16 'BEGIN{c=0} !/^#/ && NF {if ((c % n)==s) print; c++}' config/gosom_ibb_queries.txt > ".scan/queries-${{ matrix.shard }}.txt"
+          wc -l ".scan/queries-${{ matrix.shard }}.txt"
+      - name: Scrape with gosom
+        run: |
+          set -e
+          out="/work/.scan/gosom/shard-${{ matrix.shard }}.csv"
+          mkdir -p /work/.scan/gosom
+          for attempt in 1 2 3; do
+            echo "Attempt $attempt"
+            if docker run --rm -v "${GITHUB_WORKSPACE}:/work" gosom/google-maps-scraper:latest               -input "/work/.scan/queries-${{ matrix.shard }}.txt"               -results "$out" -depth 3 -email -resume -c 4 -pages-per-browser 2 -browser-pool-size 2 -exit-on-inactivity 15m; then
+              test -s "$out"; exit 0
+            fi
+            sleep 20
+          done
+          exit 1
+      - name: Upload shard results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gosom-ibb-category-${{ matrix.shard }}
+          path: .scan/gosom/shard-${{ matrix.shard }}.csv
+          if-no-files-found: warn
+          retention-days: 14
+
+  grid-scrape:
+    name: Google Maps grid shard ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        shard: [0,1,2,3]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare grid query shard
+        run: |
+          set -e
+          mkdir -p .scan/gosom-grid
+          cat > .scan/grid-all.txt <<'EOF'
+          stores in Ibb Yemen
+          shops in Ibb Yemen
+          commercial shops in Ibb Yemen
+          markets in Ibb Yemen
+          supermarkets in Ibb Yemen
+          electronics stores in Ibb Yemen
+          mobile phone shops in Ibb Yemen
+          clothing stores in Ibb Yemen
+          furniture stores in Ibb Yemen
+          hardware stores in Ibb Yemen
+          jewelry stores in Ibb Yemen
+          auto parts stores in Ibb Yemen
+          pharmacies in Ibb Yemen
+          bakeries in Ibb Yemen
+          cafes in Ibb Yemen
+          restaurants in Ibb Yemen
+          EOF
+          awk -v s="${{ matrix.shard }}" 'NR % 4 == s+1' .scan/grid-all.txt > ".scan/grid-${{ matrix.shard }}.txt"
+      - name: Grid scrape with gosom
+        run: |
+          set -e
+          out="/work/.scan/gosom-grid/shard-${{ matrix.shard }}.csv"
+          mkdir -p /work/.scan/gosom-grid
+          for attempt in 1 2 3; do
+            if docker run --rm -v "${GITHUB_WORKSPACE}:/work" gosom/google-maps-scraper:latest               -input "/work/.scan/grid-${{ matrix.shard }}.txt"               -results "$out" -depth 2 -email -resume -c 4 -pages-per-browser 2 -browser-pool-size 2               -grid-bbox "13.90,44.12,14.04,44.25" -grid-cell 1.5 -exit-on-inactivity 15m; then
+              test -s "$out"; exit 0
+            fi
+            sleep 20
+          done
+          exit 1
+      - name: Upload grid results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gosom-ibb-grid-${{ matrix.shard }}
+          path: .scan/gosom-grid/shard-${{ matrix.shard }}.csv
+          if-no-files-found: warn
+          retention-days: 14
+
+  merge:
+    name: Merge, deduplicate and audit
+    needs: [category-scrape, grid-scrape]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download category shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: gosom-ibb-category-*
+          path: .scan/gosom
+          merge-multiple: true
+      - name: Download grid shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: gosom-ibb-grid-*
+          path: .scan/gosom
+          merge-multiple: true
+      - name: Merge Google results
+        run: python scripts/merge_gosom_ibb_results.py
+      - name: Quality gate
+        run: |
+          set -e
+          test -s data/ibb_google_gosom.csv
+          test -s data/ibb_google_gosom.jsonl
+          test -s data/ibb_google_gosom_report.json
+          python - <<'PY'
+          import csv, json
+          p=json.load(open("data/ibb_google_gosom_report.json",encoding="utf-8"))
+          assert p["unique_google_rows"] > 0, p
+          assert p["with_coordinates"] > 0, p
+          print(json.dumps(p,ensure_ascii=False,indent=2))
+          PY
+      - name: Commit verified results
+        run: |
+          set -e
+          git config user.name "Spatial Synapse Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/ibb_google_gosom.csv data/ibb_google_gosom.jsonl data/ibb_google_gosom_report.json
+          git diff --cached --quiet && exit 0
+          git commit -m "data: refresh full Ibb Google Maps gosom dataset"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep 5
+          done
+          exit 1
