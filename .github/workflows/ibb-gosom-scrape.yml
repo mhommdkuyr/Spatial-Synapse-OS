@@ -50,11 +50,17 @@ jobs:
               -input /queries.txt \
               -results /out/shard-${{ matrix.shard }}.csv \
               -depth 3 -email -resume -c 4 -pages-per-browser 2 -browser-pool-size 2 -exit-on-inactivity 15m; then
+              sudo chown -R "$(id -u):$(id -g)" .scan/gosom || true
               test -s "$out"; exit 0
             fi
+            sudo chown -R "$(id -u):$(id -g)" .scan/gosom || true
             sleep 20
           done
           exit 1
+      - name: Normalize file ownership
+        if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" .scan/gosom || true
+
       - name: Upload shard results
         if: always()
         uses: actions/upload-artifact@v4
@@ -97,7 +103,10 @@ jobs:
           cafes in Ibb Yemen
           restaurants in Ibb Yemen
           EOF
-          awk -v s="${{ matrix.shard }}" 'NR % 4 == s+1' .scan/grid-all.txt > ".scan/grid-${{ matrix.shard }}.txt"
+          awk -v s="${{ matrix.shard }}" '((NR-1) % 4) == s' .scan/grid-all.txt > ".scan/grid-${{ matrix.shard }}.txt"
+          echo "Grid query shard ${{ matrix.shard }}:"
+          cat ".scan/grid-${{ matrix.shard }}.txt"
+          test -s ".scan/grid-${{ matrix.shard }}.txt"
       - name: Grid scrape with gosom
         run: |
           set -e
@@ -112,11 +121,17 @@ jobs:
               -results /out/shard-${{ matrix.shard }}.csv \
               -depth 2 -email -resume -c 4 -pages-per-browser 2 -browser-pool-size 2 \
               -grid-bbox "13.90,44.12,14.04,44.25" -grid-cell 1.5 -exit-on-inactivity 15m; then
+              sudo chown -R "$(id -u):$(id -g)" .scan/gosom-grid || true
               test -s "$out"; exit 0
             fi
+            sudo chown -R "$(id -u):$(id -g)" .scan/gosom-grid || true
             sleep 20
           done
           exit 1
+      - name: Normalize grid file ownership
+        if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" .scan/gosom-grid || true
+
       - name: Upload grid results
         if: always()
         uses: actions/upload-artifact@v4
