@@ -49,7 +49,7 @@ jobs:
               gosom/google-maps-scraper:latest \
               -input /queries.txt \
               -results /out/shard-${{ matrix.shard }}.csv \
-              -depth 3 -email -resume -c 4 -pages-per-browser 2 -browser-pool-size 2 -exit-on-inactivity 15m; then
+              -depth 5 -email -resume -c 4 -pages-per-browser 2 -browser-pool-size 2 -exit-on-inactivity 15m; then
               sudo chown -R "$(id -u):$(id -g)" .scan/gosom || true
               test -s "$out"; exit 0
             fi
@@ -58,6 +58,10 @@ jobs:
           done
           exit 1
       - name: Normalize file ownership
+        if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" .scan/gosom || true
+
+      - name: Normalize shard file ownership
         if: always()
         run: sudo chown -R "$(id -u):$(id -g)" .scan/gosom || true
 
@@ -119,8 +123,8 @@ jobs:
               gosom/google-maps-scraper:latest \
               -input /queries.txt \
               -results /out/shard-${{ matrix.shard }}.csv \
-              -depth 2 -email -resume -c 4 -pages-per-browser 2 -browser-pool-size 2 \
-              -grid-bbox "13.90,44.12,14.04,44.25" -grid-cell 1.5 -exit-on-inactivity 15m; then
+              -depth 5 -email -resume -c 4 -pages-per-browser 2 -browser-pool-size 2 \
+              -grid-bbox "13.90,44.12,14.04,44.25" -grid-cell 1.0 -exit-on-inactivity 15m; then
               sudo chown -R "$(id -u):$(id -g)" .scan/gosom-grid || true
               test -s "$out"; exit 0
             fi
@@ -128,6 +132,10 @@ jobs:
             sleep 20
           done
           exit 1
+      - name: Normalize grid file ownership
+        if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" .scan/gosom-grid || true
+
       - name: Normalize grid file ownership
         if: always()
         run: sudo chown -R "$(id -u):$(id -g)" .scan/gosom-grid || true
