@@ -1,0 +1,130 @@
+name: Ibb Google Places — one query per source name
+
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "Pilot (50 names) or full run (all 11,050 names)"
+        required: true
+        type: choice
+        options: [pilot, full]
+        default: pilot
+      full_run_confirmation:
+        description: "For full runs, enter RUN_11050 to confirm Google Places API usage/cost"
+        required: false
+        type: string
+        default: "NO"
+      max_qps:
+        description: "Maximum Google Places requests per second (0.1–10)"
+        required: true
+        type: number
+        default: 1
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ibb-google-name-enrichment-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+    steps:
+      - name: Checkout the selected branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip requests
+
+      - name: Preflight — require official Google key and explicit full-run approval
+        env:
+          RUN_SCOPE: ${{ inputs.scope }}
+          FULL_RUN_CONFIRMATION: ${{ inputs.full_run_confirmation }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GOOGLE_PLACES_API_KEY:-}" ]; then
+            echo "Missing repository Actions secret: GOOGLE_PLACES_API_KEY"
+            echo "Add an enabled Google Places API (New) key in Settings > Secrets and variables > Actions."
+            exit 2
+          fi
+          if [ "$RUN_SCOPE" = "full" ] && [ "$FULL_RUN_CONFIRMATION" != "RUN_11050" ]; then
+            echo "Full run blocked. Enter RUN_11050 to confirm up to 11,050 individual Google Places requests and associated API charges."
+            exit 3
+          fi
+          echo "Preflight passed. Scope=$RUN_SCOPE"
+
+      - name: Search names individually through Google Places API
+        env:
+          RUN_SCOPE: ${{ inputs.scope }}
+          MAX_QPS: ${{ inputs.max_qps }}
+        run: |
+          set -euo pipefail
+          LIMIT=50
+          if [ "$RUN_SCOPE" = "full" ]; then LIMIT=0; fi
+          python scripts/ibb_google_name_by_name.py \
+            --input data/ibb_source_names_11050.csv.gz \
+            --out-dir .scan/google_name_by_name \
+            --max-records "$LIMIT" \
+            --max-qps "$MAX_QPS"
+
+      - name: Export consolidated CSV and audit report
+        if: always()
+        run: |
+          if [ -f .scan/google_name_by_name/google_places_per_name.jsonl ]; then
+            python - <<'PY'
+          import sys
+          sys.path.insert(0, '.')
+          from pathlib import Path
+          from scripts.ibb_google_name_by_name import load_completed, write_exports
+          p=Path('.scan/google_name_by_name')
+          rows=load_completed(p/'google_places_per_name.jsonl')[1]
+          write_exports(rows,p)
+          print(f'Exported {len(rows)} source-name rows')
+          PY
+          fi
+
+      - name: Upload raw candidate evidence and consolidated outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ibb-google-name-enrichment-${{ github.run_id }}
+          path: |
+            .scan/google_name_by_name/google_places_per_name.jsonl
+            .scan/google_name_by_name/ibb_google_name_enrichment_11050.csv
+            .scan/google_name_by_name/ibb_google_name_enrichment_report.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Commit consolidated results to this feature branch
+        if: always()
+        run: |
+          set -euo pipefail
+          CSV=.scan/google_name_by_name/ibb_google_name_enrichment_11050.csv
+          REPORT=.scan/google_name_by_name/ibb_google_name_enrichment_report.json
+          if [ ! -s "$CSV" ] || [ ! -s "$REPORT" ]; then
+            echo "No consolidated results to commit; raw artifact step above preserves any checkpoint."
+            exit 0
+          fi
+          mkdir -p data/google_name_enrichment
+          cp "$CSV" data/google_name_enrichment/ibb_google_name_enrichment_11050.csv
+          cp "$REPORT" data/google_name_enrichment/ibb_google_name_enrichment_report.json
+          git config user.name "Spatial Synapse Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/google_name_enrichment/ibb_google_name_enrichment_11050.csv data/google_name_enrichment/ibb_google_name_enrichment_report.json
+          if git diff --cached --quiet; then
+            echo "No result changes to commit."
+            exit 0
+          fi
+          git commit -m "data: add Google Places per-name enrichment results"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

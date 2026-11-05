@@ -1,0 +1,21 @@
+{
+  "source_file": "data/ibb_source_names_11050.csv.gz",
+  "source_drive_file_id": "1Ng_Mo420BOEuxsGZXCw3GOzaMqkL2kHf",
+  "source_drive_filename": "Ibb_Businesses_All.geojson",
+  "source_record_count": 11050,
+  "unique_source_ids": 11050,
+  "unique_source_names": 11050,
+  "fields_preserved": [
+    "source_id",
+    "source_name"
+  ],
+  "fields_deliberately_excluded": [
+    "source address",
+    "source phone",
+    "source rating",
+    "source coordinates"
+  ],
+  "sha256_gzip": "a87bcb708d16d4c7f1fd130d14a6d3cf45df7bc633a43969ce5338ea20b5c673",
+  "created_at": "2026-11-05",
+  "purpose": "Per-name Google Places API enrichment. This file contains search keys, not a claim that every named entity has been independently verified."
+}
