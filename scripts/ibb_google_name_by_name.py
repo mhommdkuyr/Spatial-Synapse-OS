@@ -53,26 +53,33 @@ def name_similarity(source_name: str, candidate_name: str) -> float:
     overlap = (2 * len(at & bt) / (len(at) + len(bt))) if at and bt else 0.0
     return round(max(seq, overlap), 4)
 
-def inside_ibb(place: dict) -> bool:
+def inside_ibb(place: dict) -> bool | None:
+    """Return True/False only when Google supplies coordinates; None means unknown."""
     loc = place.get("location") or {}
     lat, lon = loc.get("latitude"), loc.get("longitude")
     if lat is None or lon is None:
-        # Address can support review, but never establishes a coordinate match.
-        return "ibb" in str(place.get("formattedAddress") or "").casefold() or "إب" in str(place.get("formattedAddress") or "")
+        return None
     return IBB_BBOX["south"] <= float(lat) <= IBB_BBOX["north"] and IBB_BBOX["west"] <= float(lon) <= IBB_BBOX["east"]
+
+def address_mentions_ibb(place: dict) -> bool:
+    address = str(place.get("formattedAddress") or "").casefold()
+    return "ibb" in address or "إب" in address
 
 def decision_for(source_name: str, place: dict) -> tuple[float, str]:
     display = (place.get("displayName") or {}).get("text", "")
     score = name_similarity(source_name, display)
     local = inside_ibb(place)
+    address_local = address_mentions_ibb(place)
     exact = normalize(source_name) == normalize(display) and bool(normalize(display))
-    if exact and local:
+    if exact and local is True:
         return score, "exact_name_in_ibb_bbox"
-    if score >= 0.90 and local:
+    if exact and local is None and address_local:
+        return score, "exact_name_address_only_review_required"
+    if score >= 0.90 and local is True:
         return score, "strong_candidate_review_required"
-    if score >= 0.74 and local:
+    if score >= 0.74 and (local is True or (local is None and address_local)):
         return score, "possible_candidate_review_required"
-    if score >= 0.90 and not local:
+    if score >= 0.90 and local is False:
         return score, "name_match_outside_ibb_bbox_review"
     return score, "weak_or_unrelated_candidate"
 
@@ -210,16 +217,17 @@ def main() -> int:
     session = requests.Session()
     interval = 1.0 / args.max_qps
     print(json.dumps({"input_names": len(input_rows), "already_completed": len(completed), "to_search": sum(1 for r in input_rows if str(r["source_id"]) not in completed), "max_qps": args.max_qps}, ensure_ascii=False), flush=True)
-    last_request_end = 0.0
+    last_request_start = 0.0
     try:
         with jsonl_path.open("a", encoding="utf-8") as out:
             for index, source in enumerate(input_rows, start=1):
                 sid = str(source["source_id"])
                 if sid in completed:
                     continue
-                wait = interval - (time.monotonic() - last_request_end)
+                wait = interval - (time.monotonic() - last_request_start)
                 if wait > 0:
                     time.sleep(wait)
+                last_request_start = time.monotonic()
                 query = f'"{source["source_name"]}" Ibb, Yemen'
                 now = datetime.now(timezone.utc).isoformat()
                 try:
@@ -245,7 +253,6 @@ def main() -> int:
                 out.write(json.dumps(rec, ensure_ascii=False, separators=(",", ":")) + "\n")
                 out.flush()
                 records.append(rec); completed.add(sid)
-                last_request_end = time.monotonic()
                 if len(records) % 50 == 0:
                     write_exports(load_completed(jsonl_path)[1], out_dir)
                     print(json.dumps({"progress_completed_this_run": len(records), "processed_index": index, "source_id": sid}, ensure_ascii=False), flush=True)
